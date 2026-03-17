@@ -1,4 +1,4 @@
-package com.mkhailksk.famnote.widget
+package com.mkhailksk.famnotes.widget  // Должно быть famnotes, а не famnote
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -7,15 +7,15 @@ import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
 import android.util.Log
-import com.mkhailksk.famnote.MainActivity
-import com.mkhailksk.famnote.R
+import com.mkhailksk.famnotes.MainActivity  // ИСПРАВЛЕНО: famnotes вместо famnote
+import com.mkhailksk.famnotes.R  // ИСПРАВЛЕНО: famnotes вместо famnote
 import org.json.JSONArray
 
 class NotesWidget : AppWidgetProvider() {
     
     companion object {
-        private const val TAG = "FamNoteWidget"
-        const val PREFS_NAME = "com.mkhailksk.famnote.widget"
+        private const val TAG = "FamNotesWidget"
+        const val PREFS_NAME = "com.mkhailksk.famnotes.widget"  // ИСПРАВЛЕНО
         const val NOTES_KEY = "widget_notes"
         
         fun updateWidgetNotes(context: Context, notesJson: String) {
@@ -38,14 +38,14 @@ class NotesWidget : AppWidgetProvider() {
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int
         ) {
-            val views = RemoteViews(context.packageName, R.layout.widget_notes)
+            val views = RemoteViews(context.packageName, R.layout.widget_notes)  // R будет найден
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val notesJson = prefs.getString(NOTES_KEY, "[]")
             
             val notesText = formatAllNotes(notesJson)
-            views.setTextViewText(R.id.widget_notes_list, notesText)
+            views.setTextViewText(R.id.widget_notes_list, notesText)  // R.id будет найден
             
-            val intent = Intent(context, MainActivity::class.java).apply {
+            val intent = Intent(context, MainActivity::class.java).apply {  // MainActivity найден
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             
@@ -54,7 +54,7 @@ class NotesWidget : AppWidgetProvider() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             
-            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)  // R.id будет найден
             
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
