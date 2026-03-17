@@ -1,44 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
     android:background="#80000000"
-    android:clickable="true"
-    android:focusable="true">
+    android:padding="12dp">
 
-    <TextView
-        android:id="@+id/widget_title"
+    <!-- Верхняя панель с заголовком и кнопкой + -->
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="FamNote"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="FamNote"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true" />
+
+        <ImageButton
+            android:id="@+id/widget_add_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:src="@android:drawable/ic_input_add"
+            android:background="@android:color/transparent"
+            android:tint="#FFFFFF"
+            android:scaleType="centerInside"
+            android:contentDescription="Добавить заметку" />
+
+    </RelativeLayout>
+
+    <!-- Разделитель -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#33FFFFFF"
         android:layout_marginBottom="8dp" />
-    
-    <TextView
-        android:id="@+id/widget_text"
+
+    <!-- Список заметок с прокруткой -->
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:text="Нет заметок"
-        android:textSize="14sp"
-        android:textColor="#FFFFFF"
-        android:fontFamily="sans-serif"
-        android:gravity="center_vertical" />
-    
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/widget_notes_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+    </ScrollView>
+
+    <!-- Подсказка внизу -->
     <TextView
         android:id="@+id/widget_hint"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Нажмите чтобы открыть"
-        android:textSize="12sp"
-        android:textColor="#B3FFFFFF"
+        android:text="Нажмите на заметку для редактирования"
+        android:textSize="11sp"
+        android:textColor="#80FFFFFF"
         android:gravity="center"
         android:layout_marginTop="8dp" />
-    
+
 </LinearLayout>
