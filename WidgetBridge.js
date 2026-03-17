@@ -13,7 +13,7 @@ export const updateWidgetData = async (notes) => {
       return;
     }
 
-    // Берем ВСЕ заметки из папки "Главная" (без ограничения по количеству)
+    // Берем ВСЕ заметки из папки "Главная" (без ограничений)
     const mainFolderNotes = notes
       .filter(note => note.folder === 'Главная' && !note.deleted)
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
@@ -24,7 +24,7 @@ export const updateWidgetData = async (notes) => {
         date: note.updatedAt || note.createdAt || Date.now()
       }));
     
-    console.log('Updating widget with notes:', mainFolderNotes.length);
+    console.log(`📱 Updating widget with ${mainFolderNotes.length} notes from Главная`);
     
     const notesJson = JSON.stringify(mainFolderNotes);
     
@@ -33,7 +33,7 @@ export const updateWidgetData = async (notes) => {
       WidgetDataModule.updateWidgetNotes(notesJson);
     }
     
-    // Для всех платформ - сохраняем в AsyncStorage как запасной вариант
+    // Сохраняем в AsyncStorage как запасной вариант
     await AsyncStorage.setItem('@widget_notes', notesJson);
     
   } catch (error) {
@@ -41,7 +41,6 @@ export const updateWidgetData = async (notes) => {
   }
 };
 
-// Функция для получения данных виджета (будет вызываться из нативного кода)
 export const getWidgetNotes = async () => {
   try {
     const notesJson = await AsyncStorage.getItem('@widget_notes');
