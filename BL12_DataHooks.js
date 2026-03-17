@@ -6,6 +6,7 @@ import { Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { NOTE_COLORS } from './BL02_Constants';
+import { updateWidgetData } from './WidgetBridge';
 
 export const useNotesData = () => {
   const [notes, setNotes] = useState([]);
@@ -29,7 +30,10 @@ export const useNotesData = () => {
       
       if (savedNotes) {
         const parsed = JSON.parse(savedNotes);
-        setNotes(parsed.map(n => ({ ...n, color: n.color || NOTE_COLORS[0] })));
+        const normalized = parsed.map(n => ({ ...n, color: n.color || NOTE_COLORS[0] }));
+        setNotes(normalized);
+        // Обновляем виджет при загрузке
+        updateWidgetData(normalized);
       }
       if (savedFolders) setFolders(JSON.parse(savedFolders));
       if (savedSettings) setSettings(JSON.parse(savedSettings));
@@ -43,6 +47,8 @@ export const useNotesData = () => {
     setNotes(normalized);
     try {
       await AsyncStorage.setItem('notes', JSON.stringify(normalized));
+      // Обновляем виджет при сохранении
+      updateWidgetData(normalized);
     } catch (e) {
       if (Platform.OS === 'web') Alert.alert('Внимание', 'Данные сохранены только в памяти');
     }
