@@ -18,15 +18,21 @@
         android:textStyle="bold"
         android:layout_marginBottom="8dp" />
 
-    <TextView
-        android:id="@+id/widget_notes_list"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:text="• Заметка 1\n• Заметка 2\n• Заметка 3"
-        android:textSize="14sp"
-        android:textColor="#FFFFFF"
-        android:lineSpacingExtra="4dp" />
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/widget_notes_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• Загрузка..."
+            android:textSize="14sp"
+            android:textColor="#FFFFFF"
+            android:lineSpacingExtra="4dp" />
+
+    </ScrollView>
 
     <TextView
         android:id="@+id/widget_hint"
