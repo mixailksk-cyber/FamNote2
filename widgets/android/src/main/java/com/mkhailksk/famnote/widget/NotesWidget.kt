@@ -1,27 +1,25 @@
-package com.mkhailksk.famnote.widget
+package com.mkhailksk.famnotes.widget // Изменено с famnote на famnotes
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.widget.RemoteViews
 import android.util.Log
-import com.mkhailksk.famnote.MainActivity
-import com.mkhailksk.famnote.R
+import com.mkhailksk.famnotes.MainActivity
+import com.mkhailksk.famnotes.R
 import org.json.JSONArray
 
 class NotesWidget : AppWidgetProvider() {
     
     companion object {
-        private const val TAG = "FamNoteWidget"
-        const val PREFS_NAME = "com.mkhailksk.famnote.widget"
+        private const val TAG = "FamNotesWidget" // Изменено
+        const val PREFS_NAME = "com.mkhailksk.famnotes.widget" // Изменено
         const val NOTES_KEY = "widget_notes"
         
         fun updateWidgetNotes(context: Context, notesJson: String) {
             Log.d(TAG, "📥 updateWidgetNotes called with data length: ${notesJson.length}")
-            // Исправлено: безопасный вызов с ?.let
             val preview = notesJson.take(200)
             Log.d(TAG, "📄 First 200 chars: $preview")
             
@@ -51,17 +49,14 @@ class NotesWidget : AppWidgetProvider() {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val notesJson = prefs.getString(NOTES_KEY, "[]")
             
-            // Исправлено: безопасный вызов с ?.let
             val preview = notesJson?.take(100) ?: "null"
             Log.d(TAG, "📄 Retrieved from SharedPreferences: $preview")
             
-            // Форматируем список всех заметок
             val notesText = formatAllNotes(notesJson)
             Log.d(TAG, "📝 Formatted text:\n$notesText")
             
             views.setTextViewText(R.id.widget_notes_list, notesText)
             
-            // Intent для открытия приложения
             val intent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
