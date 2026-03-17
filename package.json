@@ -26,6 +26,6 @@
     "react-native-web": "^0.21.0"
   },
   "private": true,
-  "name": "famnote",
+  "name": "famnotes",
   "version": "1.0.0"
 }
