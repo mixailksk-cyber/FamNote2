@@ -29,8 +29,9 @@ const AppContent = () => {
   const [selectedFolderColor, setSelectedFolderColor] = useState(BRAND_COLOR);
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [selectedNoteForAction, setSelectedNoteForAction] = useState(null);
+  const [restoreKey, setRestoreKey] = useState(0); // Ключ для принудительного обновления
   
-  const { notes, folders, settings, saveNotes, saveFolders, saveSettings } = useNotesData();
+  const { notes, folders, settings, saveNotes, saveFolders, saveSettings, loadData } = useNotesData();
   const { sortedNotes } = useMemoizedCalculations({ notes, folders, currentFolder });
   const { handleRenameFolder, handleColorChange, handleDeleteFolder } = useFolderHandlers({
     folders, notes, currentFolder, saveFolders, saveNotes, setCurrentFolder
@@ -38,6 +39,13 @@ const AppContent = () => {
   const { searchResults, goToSearch, goBack, handleNotePress, handleCloseSearch } = useSearchNavigation({
     notes, searchQuery, currentScreen, navigationStack, setCurrentScreen, setNavigationStack, setSelectedNote, setSearchQuery
   });
+
+  // Функция для принудительной перезагрузки данных после восстановления
+  const handleDataRestored = async () => {
+    console.log('🔄 Data restored, reloading...');
+    await loadData(); // Перезагружаем данные
+    setRestoreKey(prev => prev + 1); // Меняем ключ для обновления компонентов
+  };
   
   const handleTogglePin = (noteId) => {
     const updatedNotes = notes.map(n => n.id === noteId ? { ...n, pinned: !n.pinned, updatedAt: Date.now() } : n);
@@ -92,6 +100,7 @@ const AppContent = () => {
     switch (currentScreen) {
       case 'notes':
         return <NotesListScreen 
+          key={`notes-${restoreKey}`} // Ключ для обновления
           currentFolder={currentFolder} 
           sortedNotes={sortedNotes} 
           handleNotePress={(note) => handleNotePress(note, 'notes')} 
@@ -152,7 +161,8 @@ const AppContent = () => {
           saveSettings={saveSettings} 
           notes={notes} 
           folders={folders} 
-          onBrandColorChange={handleBrandColorChange} 
+          onBrandColorChange={handleBrandColorChange}
+          onDataRestored={handleDataRestored} // Передаем обработчик
         />;
       
       case 'search':
@@ -172,6 +182,7 @@ const AppContent = () => {
       
       default:
         return <NotesListScreen 
+          key={`notes-${restoreKey}`}
           currentFolder={currentFolder} 
           sortedNotes={sortedNotes} 
           handleNotePress={(note) => handleNotePress(note, 'notes')} 
