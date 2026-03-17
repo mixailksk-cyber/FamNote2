@@ -5,7 +5,9 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="#008080">
+    android:background="#80000000"
+    android:clickable="true"
+    android:focusable="true">
 
     <TextView
         android:id="@+id/widget_title"
@@ -14,15 +16,29 @@
         android:text="FamNote"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:textColor="@android:color/white" />
+        android:textColor="#FFFFFF"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="8dp" />
     
     <TextView
         android:id="@+id/widget_text"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Заметки"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="Нет заметок"
         android:textSize="14sp"
-        android:textColor="@android:color/white" />
+        android:textColor="#FFFFFF"
+        android:fontFamily="sans-serif"
+        android:gravity="center_vertical" />
+    
+    <TextView
+        android:id="@+id/widget_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Нажмите чтобы открыть"
+        android:textSize="12sp"
+        android:textColor="#B3FFFFFF"
+        android:gravity="center"
+        android:layout_marginTop="8dp" />
     
 </LinearLayout>
