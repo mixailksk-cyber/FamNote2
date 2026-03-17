@@ -10,22 +10,37 @@ import Header from './BL04_Header';
 import { NOTE_COLORS, getBrandColor } from './BL02_Constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
+import { useNotesData } from './BL12_DataHooks'; // Добавляем импорт
 
-const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, notes, folders, onBrandColorChange }) => {
+const SettingsScreen = ({ 
+  setCurrentScreen, 
+  goToSearch, 
+  settings, 
+  saveSettings, 
+  notes, 
+  folders, 
+  onBrandColorChange,
+  onDataRestored // Добавляем проп для уведомления о восстановлении
+}) => {
   const fontSizeOptions = [14, 16, 18, 20, 22, 24];
   const brandColor = getBrandColor(settings);
   const [logs, setLogs] = useState([]);
+  const { loadData } = useNotesData(); // Получаем функцию загрузки данных
 
   const addLog = (message, data) => {
+    const time = new Date().toLocaleTimeString('ru-RU', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
     const logEntry = {
-      timestamp: new Date().toISOString(),
+      time,
       message,
       data: data ? JSON.stringify(data, null, 2) : null
     };
-    console.log(`📋 [${logEntry.timestamp}] ${message}`, data || '');
-    setLogs(prev => [...prev.slice(-9), logEntry]); // Храним последние 10 логов
+    console.log(`📋 [${time}] ${message}`, data || '');
+    setLogs(prev => [...prev.slice(-9), logEntry]);
   };
 
   useEffect(() => {
@@ -33,22 +48,17 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
   }, []);
 
   const checkFileSystem = async () => {
-    try {
-      addLog('🔍 Проверка файловой системы...');
-      
-      const info = {
-        platform: Platform.OS,
-        platformVersion: Platform.Version,
-        documentDirectory: FileSystem.documentDirectory || 'null',
-        cacheDirectory: FileSystem.cacheDirectory || 'null',
-        sharingAvailable: await Sharing.isAvailableAsync(),
-      };
+    addLog('🔍 Проверка файловой системы...');
+    
+    const info = {
+      platform: Platform.OS,
+      platformVersion: Platform.Version,
+      documentDirectory: FileSystem.documentDirectory || 'null',
+      cacheDirectory: FileSystem.cacheDirectory || 'null',
+      sharingAvailable: await Sharing.isAvailableAsync(),
+    };
 
-      addLog('📁 Информация о ФС:', info);
-      
-    } catch (e) {
-      addLog('❌ Ошибка проверки ФС:', e);
-    }
+    addLog('📁 Информация о ФС:', info);
   };
 
   const formatDateForFilename = () => {
@@ -86,9 +96,8 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
         return;
       }
 
-      // Используем documentDirectory (более надежно)
       if (FileSystem.documentDirectory) {
-        addLog('📁 documentDirectory доступен:', FileSystem.documentDirectory);
+        addLog('📁 documentDirectory:', FileSystem.documentDirectory);
         
         const fileUri = FileSystem.documentDirectory + fileName;
         addLog('📄 URI файла:', fileUri);
@@ -98,41 +107,25 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
         });
         addLog('✅ Файл записан');
 
-        // Проверяем что файл создался
         const fileInfo = await FileSystem.getInfoAsync(fileUri);
         addLog('📊 Информация о файле:', fileInfo);
 
         if (fileInfo.exists) {
-          addLog('✅ Файл существует, размер:', fileInfo.size);
-          
           if (await Sharing.isAvailableAsync()) {
-            addLog('📤 Sharing доступен');
+            addLog('📤 Открываем диалог сохранения...');
             await Sharing.shareAsync(fileUri, {
               mimeType: 'application/octet-stream',
               dialogTitle: 'Сохранить резервную копию'
             });
           } else {
-            addLog('⚠️ Sharing недоступен');
             Alert.alert('✅ Файл создан', `Файл сохранен:\n${fileUri}`);
           }
-        } else {
-          throw new Error('Файл не найден после записи');
         }
-      } else {
-        throw new Error('documentDirectory недоступен');
       }
 
     } catch (e) {
       addLog('❌ Ошибка бэкапа:', e);
-      
-      // Fallback на буфер обмена
-      try {
-        const backupStr = JSON.stringify({ notes, folders, settings }, null, 2);
-        await Clipboard.setStringAsync(backupStr);
-        Alert.alert('📋 Скопировано', 'Данные скопированы в буфер обмена');
-      } catch (clipError) {
-        Alert.alert('❌ Ошибка', 'Не удалось создать резервную копию');
-      }
+      Alert.alert('❌ Ошибка', 'Не удалось создать резервную копию');
     }
   };
 
@@ -146,7 +139,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
         copyToCacheDirectory: true
       });
       
-      addLog('📦 Результат выбора:', result);
+      addLog('📦 Результат:', result);
 
       if (result.canceled) {
         addLog('❌ Выбор отменен');
@@ -157,11 +150,10 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
       addLog('📄 Выбран файл:', {
         name: asset.name,
         size: asset.size,
-        uri: asset.uri,
-        mimeType: asset.mimeType
+        uri: asset.uri
       });
 
-      // Пробуем прочитать файл
+      // Читаем файл
       addLog('📖 Чтение файла...');
       let content;
       
@@ -169,39 +161,29 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
         const response = await fetch(asset.uri);
         content = await response.text();
       } else {
-        // Для Android копируем файл в доступную директорию
-        if (FileSystem.cacheDirectory) {
-          const tempFile = FileSystem.cacheDirectory + 'temp_backup.bak';
-          addLog('📁 Копируем во временный файл:', tempFile);
-          
-          // Копируем файл
-          await FileSystem.copyAsync({
-            from: asset.uri,
-            to: tempFile
-          });
-          
-          // Читаем из временного файла
-          content = await FileSystem.readAsStringAsync(tempFile, {
-            encoding: FileSystem.EncodingType.UTF8
-          });
-          
-          // Удаляем временный файл
-          await FileSystem.deleteAsync(tempFile);
-        } else {
-          // Пробуем читать напрямую
-          content = await FileSystem.readAsStringAsync(asset.uri);
-        }
+        // Копируем во временный файл
+        const tempFile = FileSystem.cacheDirectory + 'temp_restore.bak';
+        addLog('📁 Копируем во временный файл:', tempFile);
+        
+        await FileSystem.copyAsync({
+          from: asset.uri,
+          to: tempFile
+        });
+        
+        content = await FileSystem.readAsStringAsync(tempFile, {
+          encoding: FileSystem.EncodingType.UTF8
+        });
+        
+        await FileSystem.deleteAsync(tempFile);
       }
 
-      addLog('📄 Содержимое файла (первые 100 символов):', content.substring(0, 100));
+      addLog('📄 Содержимое (первые 100 символов):', content.substring(0, 100));
 
       addLog('🔍 Парсим JSON...');
       const backup = JSON.parse(content);
       
       addLog('📊 Структура бэкапа:', {
-        hasNotes: !!backup.notes,
         notesCount: backup.notes?.length,
-        hasFolders: !!backup.folders,
         foldersCount: backup.folders?.length,
         hasSettings: !!backup.settings
       });
@@ -209,11 +191,13 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
       if (backup.notes && backup.folders) {
         addLog('💾 Сохраняем в AsyncStorage...');
         
+        // Нормализуем заметки
         const normalizedNotes = backup.notes.map(n => ({ 
           ...n, 
           color: n.color || brandColor 
         }));
         
+        // Сохраняем данные
         await AsyncStorage.setItem('notes', JSON.stringify(normalizedNotes));
         await AsyncStorage.setItem('folders', JSON.stringify(backup.folders));
         
@@ -221,8 +205,30 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
           await AsyncStorage.setItem('settings', JSON.stringify(backup.settings));
         }
         
-        addLog('✅ Данные восстановлены');
-        Alert.alert('✅ Успех', 'Данные восстановлены');
+        addLog('✅ Данные сохранены в AsyncStorage');
+        
+        // ВАЖНО: Уведомляем приложение о необходимости перезагрузить данные
+        addLog('🔄 Уведомляем приложение о восстановлении...');
+        
+        // Вызываем функцию перезагрузки данных
+        if (onDataRestored) {
+          onDataRestored();
+        }
+        
+        // Показываем успех и предлагаем перезапустить
+        Alert.alert(
+          '✅ Успех', 
+          'Данные восстановлены. Перезапустите приложение для применения изменений.',
+          [
+            { 
+              text: 'OK', 
+              onPress: () => {
+                // Возвращаемся на главный экран
+                setCurrentScreen('notes');
+              }
+            }
+          ]
+        );
       } else {
         throw new Error('Неверный формат файла');
       }
@@ -233,10 +239,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
         stack: e.stack
       });
       
-      Alert.alert(
-        '❌ Ошибка', 
-        `Не удалось восстановить данные: ${e.message}\n\nПроверьте логи для деталей.`
-      );
+      Alert.alert('❌ Ошибка', `Не удалось восстановить данные: ${e.message}`);
     }
   };
 
@@ -244,7 +247,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
     Alert.alert(
       '📋 Логи операций',
       logs.map(log => 
-        `[${log.timestamp.split('T')[1].split('.')[0]}] ${log.message}\n${log.data ? log.data : ''}`
+        `[${log.time}] ${log.message}\n${log.data ? log.data : ''}`
       ).join('\n\n') || 'Логов нет',
       [
         { text: 'Очистить', onPress: () => setLogs([]) },
