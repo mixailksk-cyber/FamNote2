@@ -34,28 +34,25 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
 
   // Фокус на content при включении режима редактирования
   useEffect(() => {
-    if (isEditing && !isNewNote && contentInputRef.current) {
-      InteractionManager.runAfterInteractions(() => {
-        contentInputRef.current.focus();
-        // Устанавливаем курсор в конец текста
+    if (isEditing && contentInputRef.current) {
+      const focusTask = InteractionManager.runAfterInteractions(() => {
         setTimeout(() => {
+          contentInputRef.current.focus();
+          // Устанавливаем курсор в конец текста
           contentInputRef.current.setNativeProps({
             selection: { start: note.content.length, end: note.content.length }
           });
         }, 100);
       });
-    }
-  }, [isEditing]);
-
-  // Для новой заметки фокус на content сразу
-  useEffect(() => {
-    if (isNewNote && contentInputRef.current) {
-      const focusTask = InteractionManager.runAfterInteractions(() => {
-        setTimeout(() => {
-          contentInputRef.current.focus();
-        }, 100);
-      });
       return () => focusTask.cancel();
+    }
+  }, [isEditing, note.content.length]);
+
+  // Для новой заметки проверяем, что isEditing установлен правильно
+  useEffect(() => {
+    if (isNewNote) {
+      // Убеждаемся, что режим редактирования включен
+      setIsEditing(true);
     }
   }, [isNewNote]);
 
