@@ -2,7 +2,7 @@
 // FILE: BL02_Constants.js
 // =====================================================
 import { Dimensions } from 'react-native';
-export const BRAND_COLOR='#008080';
+export const BRAND_COLOR='#20A0A0'; // Сделал светлее (был #008080)
 // Основные цвета + 2 случайных для сетки 3x4 (12 цветов)
 export const NOTE_COLORS=[
   '#008080', // Бирюзовый (основной)
@@ -19,7 +19,7 @@ export const NOTE_COLORS=[
   '#4ECDC4'  // Бирюзово-зеленый (добавлен)
 ];
 export const FOLDER_COLORS=['#008080','#45B7D1','#96CEB4','#9B59B6','#3498DB','#E67E22','#2ECC71','#F1C40F','#E74C3C','#34495E'];
-export const TITLE_MAX_LENGTH=30;
+export const TITLE_MAX_LENGTH=40; // Увеличено на 10 (было 30)
 export const NOTE_MAX_LENGTH=20000;
 export const FOLDER_NAME_MAX_LENGTH=50;
 export const{width}=Dimensions.get('window');
