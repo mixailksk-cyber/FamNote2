@@ -48,10 +48,9 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
     }
   }, [isEditing, note.content.length]);
 
-  // Для новой заметки проверяем, что isEditing установлен правильно
+  // Для новой заметки проверяем, что режим редактирования включен
   useEffect(() => {
     if (isNewNote) {
-      // Убеждаемся, что режим редактирования включен
       setIsEditing(true);
     }
   }, [isNewNote]);
@@ -102,7 +101,6 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
             text: 'Выйти', 
             onPress: () => {
               setNavigationStack(prev => prev.slice(0, -1));
-              // ВСЕГДА переходим в папку с заметкой, а не в поиск
               if (selectedNote) {
                 setCurrentScreen('notes');
                 setCurrentFolder(selectedNote.folder);
@@ -121,7 +119,6 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
       );
     } else {
       setNavigationStack(prev => prev.slice(0, -1));
-      // ВСЕГДА переходим в папку с заметкой
       if (selectedNote) {
         setCurrentScreen('notes');
         setCurrentFolder(selectedNote.folder);
@@ -157,6 +154,8 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
   const buttonBottom = insets.bottom + 24;
   const buttonRight = 24;
 
+  const headerTitle = isEditing ? "Редактирование" : "Просмотр";
+
   return (
     <KeyboardAvoidingView 
       style={{ flex: 1, backgroundColor: 'white' }} 
@@ -164,7 +163,7 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <Header 
-        title="Редактирование" 
+        title={headerTitle}
         showBack 
         onBack={handleBack} 
         rightIcon="settings" 
