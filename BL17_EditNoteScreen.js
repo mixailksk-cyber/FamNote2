@@ -196,32 +196,48 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-          <TextInput 
-            ref={titleInputRef}
-            style={{ fontSize: settings.fontSize + 2, fontWeight: 'bold', paddingVertical: 8, color: '#333' }} 
-            placeholder="Заголовок" 
-            placeholderTextColor="#999" 
-            maxLength={TITLE_MAX_LENGTH} 
-            value={note.title} 
-            onChangeText={t => setNote({ ...note, title: t })}
-            editable={!isInTrash && isEditing && !isLocked}
-            onPress={handleTitlePress}
-          />
+          {isEditing ? (
+            <TextInput 
+              ref={titleInputRef}
+              style={{ fontSize: settings.fontSize + 2, fontWeight: 'bold', paddingVertical: 8, color: '#333' }} 
+              placeholder="Заголовок" 
+              placeholderTextColor="#999" 
+              maxLength={TITLE_MAX_LENGTH} 
+              value={note.title} 
+              onChangeText={t => setNote({ ...note, title: t })}
+              editable={!isInTrash && isEditing && !isLocked}
+            />
+          ) : (
+            <TouchableOpacity onPress={handleTitlePress} activeOpacity={0.7}>
+              <Text style={{ fontSize: settings.fontSize + 2, fontWeight: 'bold', paddingVertical: 8, color: '#333' }}>
+                {note.title || 'Заголовок'}
+              </Text>
+            </TouchableOpacity>
+          )}
           <View style={{ height: 2, backgroundColor: note.color || brandColor, width: '100%', marginTop: 4 }} />
         </View>
 
-        <TextInput 
-          ref={contentInputRef}
-          style={{ fontSize: settings.fontSize, paddingHorizontal: 16, paddingVertical: 12, textAlignVertical: 'top', color: '#333', minHeight: 200 }} 
-          placeholder="Текст заметки..." 
-          placeholderTextColor="#999" 
-          multiline 
-          maxLength={NOTE_MAX_LENGTH} 
-          value={note.content} 
-          onChangeText={t => setNote({ ...note, content: t })}
-          editable={!isInTrash && isEditing && !isLocked}
-          scrollEnabled={true}
-        />
+        {isEditing ? (
+          <TextInput 
+            ref={contentInputRef}
+            style={{ fontSize: settings.fontSize, paddingHorizontal: 16, paddingVertical: 12, textAlignVertical: 'top', color: '#333', minHeight: 200 }} 
+            placeholder="Текст заметки..." 
+            placeholderTextColor="#999" 
+            multiline 
+            maxLength={NOTE_MAX_LENGTH} 
+            value={note.content} 
+            onChangeText={t => setNote({ ...note, content: t })}
+            editable={!isInTrash && isEditing && !isLocked}
+            scrollEnabled={true}
+          />
+        ) : (
+          <Text 
+            selectable={true}
+            style={{ fontSize: settings.fontSize, paddingHorizontal: 16, paddingVertical: 12, color: '#333', lineHeight: settings.fontSize * 1.5 }}
+          >
+            {note.content || '...'}
+          </Text>
+        )}
       </ScrollView>
 
       <TouchableOpacity 
