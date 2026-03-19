@@ -90,6 +90,13 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
     }
   };
 
+  const handleUnlock = () => {
+    setNote({ ...note, locked: false });
+    // Сохраняем изменение блокировки
+    const { isNew, ...noteToSave } = { ...note, locked: false };
+    onSave({ ...noteToSave, updatedAt: Date.now() });
+  };
+
   const handleBack = () => {
     if (hasChanges) {
       Alert.alert(
@@ -145,7 +152,7 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
     if (!isLocked) {
       setIsEditing(true);
     } else {
-      Alert.alert('Заметка заблокирована', 'Сначала разблокируйте заметку для редактирования');
+      Alert.alert('Заметка заблокирована', 'Нажмите на замок в шапке для разблокировки');
     }
   };
 
@@ -159,7 +166,7 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
   const buttonBottom = insets.bottom + 24;
   const buttonRight = 24;
 
-  const headerTitle = isEditing ? "Редактирование" : (isLocked ? "Просмотр (заблокировано)" : "Просмотр");
+  const headerTitle = isEditing ? "Редактирование" : "Просмотр";
 
   return (
     <KeyboardAvoidingView 
@@ -178,10 +185,18 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
         showSearch={false} 
         brandColor={brandColor}
       >
-        <View style={{ flexDirection: 'row' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {/* Кнопка замка - показывается только если заметка заблокирована и не в режиме редактирования */}
+          {isLocked && !isEditing && (
+            <TouchableOpacity onPress={handleUnlock} style={{ marginRight: 16 }}>
+              <MaterialIcons name="lock" size={24} color="white" />
+            </TouchableOpacity>
+          )}
+          
           <TouchableOpacity onPress={handleShare} style={{ marginRight: 16 }}>
             <MaterialIcons name="share" size={24} color="white" />
           </TouchableOpacity>
+          
           <TouchableOpacity onPress={handleDelete}>
             <MaterialIcons name="delete" size={24} color="white" />
           </TouchableOpacity>
