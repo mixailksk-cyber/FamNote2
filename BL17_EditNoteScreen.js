@@ -203,20 +203,22 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
         showPalette 
         onPalettePress={() => setShowColor(true)} 
         showSearch={false} 
-        brandColor={headerColor} // Используем цвет заметки для шапки
+        brandColor={headerColor}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {/* Кнопка замка - показывается только если заметка заблокирована и не в режиме редактирования */}
           {isLocked && !isEditing && (
-            <TouchableOpacity onPress={handleUnlock} style={{ marginRight: 16 }}>
+            <TouchableOpacity onPress={handleUnlock} style={{ marginRight: 20 }}>
               <MaterialIcons name="lock" size={24} color="white" />
             </TouchableOpacity>
           )}
           
-          <TouchableOpacity onPress={handleShare} style={{ marginRight: 16 }}>
+          {/* Кнопка поделиться - всегда показывается */}
+          <TouchableOpacity onPress={handleShare} style={{ marginRight: 20 }}>
             <MaterialIcons name="share" size={24} color="white" />
           </TouchableOpacity>
           
+          {/* Кнопка удалить - всегда показывается */}
           <TouchableOpacity onPress={handleDelete}>
             <MaterialIcons name="delete" size={24} color="white" />
           </TouchableOpacity>
