@@ -16,10 +16,10 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
     createdAt: Date.now(), 
     updatedAt: Date.now(), 
     deleted: false, 
-    pinned: false 
+    pinned: false,
+    locked: false
   });
   const [showColor, setShowColor] = useState(false);
-  // Проверяем isNew флаг или отсутствие selectedNote для новой заметки
   const [isEditing, setIsEditing] = useState(selectedNote?.isNew || !selectedNote);
   const contentInputRef = useRef(null);
   const titleInputRef = useRef(null);
@@ -31,14 +31,14 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
   }, [note, selectedNote, brandColor]);
   const isInTrash = note.folder === 'Корзина' || note.deleted === true;
   const isNewNote = !selectedNote || selectedNote?.isNew;
+  const isLocked = note.locked === true;
 
   // Фокус на content при включении режима редактирования
   useEffect(() => {
-    if (isEditing && contentInputRef.current) {
+    if (isEditing && contentInputRef.current && !isLocked) {
       const focusTask = InteractionManager.runAfterInteractions(() => {
         setTimeout(() => {
           contentInputRef.current.focus();
-          // Устанавливаем курсор в конец текста
           contentInputRef.current.setNativeProps({
             selection: { start: note.content.length, end: note.content.length }
           });
@@ -46,7 +46,7 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
       });
       return () => focusTask.cancel();
     }
-  }, [isEditing, note.content.length]);
+  }, [isEditing, note.content.length, isLocked]);
 
   // Для новой заметки проверяем, что режим редактирования включен
   useEffect(() => {
@@ -135,7 +135,6 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
   };
 
   const handleSave = () => {
-    // Удаляем служебный флаг isNew перед сохранением
     const { isNew, ...noteToSave } = note;
     if (hasChanges) onSave({ ...noteToSave, updatedAt: Date.now() });
     else onSave(noteToSave);
@@ -143,11 +142,15 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
   };
 
   const handleEditPress = () => {
-    setIsEditing(true);
+    if (!isLocked) {
+      setIsEditing(true);
+    } else {
+      Alert.alert('Заметка заблокирована', 'Сначала разблокируйте заметку для редактирования');
+    }
   };
 
   const handleTitlePress = () => {
-    if (!isEditing && titleInputRef.current) {
+    if (!isEditing && !isLocked && titleInputRef.current) {
       titleInputRef.current.focus();
     }
   };
@@ -156,7 +159,7 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
   const buttonBottom = insets.bottom + 24;
   const buttonRight = 24;
 
-  const headerTitle = isEditing ? "Редактирование" : "Просмотр";
+  const headerTitle = isEditing ? "Редактирование" : (isLocked ? "Просмотр (заблокировано)" : "Просмотр");
 
   return (
     <KeyboardAvoidingView 
@@ -201,7 +204,7 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
             maxLength={TITLE_MAX_LENGTH} 
             value={note.title} 
             onChangeText={t => setNote({ ...note, title: t })}
-            editable={!isInTrash && isEditing}
+            editable={!isInTrash && isEditing && !isLocked}
             onPress={handleTitlePress}
           />
           <View style={{ height: 2, backgroundColor: note.color || brandColor, width: '100%', marginTop: 4 }} />
@@ -216,7 +219,7 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
           maxLength={NOTE_MAX_LENGTH} 
           value={note.content} 
           onChangeText={t => setNote({ ...note, content: t })}
-          editable={!isInTrash && isEditing}
+          editable={!isInTrash && isEditing && !isLocked}
           scrollEnabled={true}
         />
       </ScrollView>
@@ -233,9 +236,11 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
           justifyContent: 'center', 
           alignItems: 'center', 
           elevation: 5, 
-          zIndex: 1000 
+          zIndex: 1000,
+          opacity: isLocked && !isEditing ? 0.5 : 1
         }} 
         onPress={isEditing ? handleSave : handleEditPress}
+        disabled={isLocked && !isEditing}
       >
         <MaterialIcons name={isEditing ? "check" : "edit"} size={36} color="white" />
       </TouchableOpacity>
