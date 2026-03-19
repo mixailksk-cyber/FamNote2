@@ -2,7 +2,7 @@
 // FILE: BL02_Constants.js
 // =====================================================
 import { Dimensions } from 'react-native';
-export const BRAND_COLOR='#20A0A0'; // Сделал светлее (был #008080)
+export const BRAND_COLOR='#40C0C0'; // Еще светлее (был #20A0A0)
 // Основные цвета + 2 случайных для сетки 3x4 (12 цветов)
 export const NOTE_COLORS=[
   '#008080', // Бирюзовый (основной)
