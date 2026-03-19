@@ -100,13 +100,10 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
     // Обновляем локальное состояние
     setNote(updatedNote);
     
-    // Сохраняем в общем хранилище
-    // Важно: передаем только данные заметки, без флага isNew
+    // Сохраняем в общем хранилище с флагом, что это разблокировка
     const { isNew, ...noteToSave } = updatedNote;
-    onSave(noteToSave);
+    onSave(noteToSave, true); // Передаем true как флаг "skipNavigation"
     
-    // НЕ меняем экран, НЕ закрываем заметку
-    // Остаемся в режиме просмотра
     console.log('Note unlocked, staying on view mode');
   };
 
@@ -164,8 +161,8 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
 
   const handleSave = () => {
     const { isNew, ...noteToSave } = note;
-    if (hasChanges) onSave({ ...noteToSave, updatedAt: Date.now() });
-    else onSave(noteToSave);
+    if (hasChanges) onSave({ ...noteToSave, updatedAt: Date.now() }, false);
+    else onSave(noteToSave, false);
     setIsEditing(false);
   };
 
