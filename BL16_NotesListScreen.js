@@ -9,6 +9,22 @@ const NotesListScreen = ({ currentFolder, sortedNotes, handleNotePress, setSelec
   const brandColor = getBrandColor(settings);
   const isInTrash = currentFolder === 'Корзина';
 
+  const handleAddNote = () => {
+    const newNote = {
+      id: Date.now() + '',
+      title: '',
+      content: '',
+      folder: currentFolder,
+      color: brandColor,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      deleted: false,
+      pinned: false
+    };
+    setSelectedNote(newNote);
+    setCurrentScreen('edit');
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <Header 
@@ -53,20 +69,7 @@ const NotesListScreen = ({ currentFolder, sortedNotes, handleNotePress, setSelec
             alignItems: 'center', 
             elevation: 5 
           }} 
-          onPress={() => {
-            setSelectedNote({
-              id: Date.now() + '',
-              title: '',
-              content: '',
-              folder: currentFolder,
-              color: brandColor,
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-              deleted: false,
-              pinned: false
-            });
-            setCurrentScreen('edit');
-          }}>
+          onPress={handleAddNote}>
           <MaterialIcons name="add" size={36} color="white" />
         </TouchableOpacity>
       )}
