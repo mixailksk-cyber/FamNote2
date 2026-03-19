@@ -29,9 +29,9 @@ const Header = ({ title, rightIcon, onRightPress, showBack, onBack, showSearch, 
       </View>
       
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        {children && <TouchableOpacity onPress={children.props.onPress} style={{ marginRight: 20 }}>
-          {children}
-        </TouchableOpacity>}
+        {/* Дополнительные кнопки из children */}
+        {children}
+        
         {showPalette && <TouchableOpacity onPress={onPalettePress} style={{ marginRight: 20 }}>
           <MaterialIcons name="palette" size={24} color="white" />
         </TouchableOpacity>}
