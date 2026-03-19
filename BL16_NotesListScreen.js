@@ -19,7 +19,8 @@ const NotesListScreen = ({ currentFolder, sortedNotes, handleNotePress, setSelec
       createdAt: Date.now(),
       updatedAt: Date.now(),
       deleted: false,
-      pinned: false
+      pinned: false,
+      isNew: true // Добавляем флаг, что это новая заметка
     };
     setSelectedNote(newNote);
     setCurrentScreen('edit');
