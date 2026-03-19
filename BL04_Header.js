@@ -30,17 +30,27 @@ const Header = ({ title, rightIcon, onRightPress, showBack, onBack, showSearch, 
       
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         {/* Дополнительные кнопки из children */}
-        {children}
+        {children && React.Children.map(children, (child, index) => (
+          <View key={index} style={{ marginRight: index === React.Children.count(children) - 1 ? 0 : 20 }}>
+            {child}
+          </View>
+        ))}
         
-        {showPalette && <TouchableOpacity onPress={onPalettePress} style={{ marginRight: 20 }}>
-          <MaterialIcons name="palette" size={24} color="white" />
-        </TouchableOpacity>}
-        {showSearch && <TouchableOpacity onPress={onSearchPress} style={{ marginRight: 20 }}>
-          <MaterialIcons name="search" size={24} color="white" />
-        </TouchableOpacity>}
-        {rightIcon && <TouchableOpacity onPress={onRightPress}>
-          <MaterialIcons name={rightIcon} size={24} color="white" />
-        </TouchableOpacity>}
+        {showPalette && (
+          <TouchableOpacity onPress={onPalettePress} style={{ marginLeft: 20 }}>
+            <MaterialIcons name="palette" size={24} color="white" />
+          </TouchableOpacity>
+        )}
+        {showSearch && (
+          <TouchableOpacity onPress={onSearchPress} style={{ marginLeft: 20 }}>
+            <MaterialIcons name="search" size={24} color="white" />
+          </TouchableOpacity>
+        )}
+        {rightIcon && (
+          <TouchableOpacity onPress={onRightPress} style={{ marginLeft: 20 }}>
+            <MaterialIcons name={rightIcon} size={24} color="white" />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
