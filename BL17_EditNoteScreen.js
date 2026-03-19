@@ -19,7 +19,9 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
     pinned: false 
   });
   const [showColor, setShowColor] = useState(false);
+  const [isEditing, setIsEditing] = useState(!selectedNote); // Для новой заметки сразу режим редактирования
   const contentInputRef = useRef(null);
+  const titleInputRef = useRef(null);
   const comingFromSearch = useMemo(() => navigationStack[navigationStack.length - 1] === 'search', [navigationStack]);
   const hasChanges = useMemo(() => {
     if (!selectedNote) return note.title !== '' || note.content !== '' || note.color !== brandColor;
@@ -28,6 +30,22 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
   const isInTrash = note.folder === 'Корзина' || note.deleted === true;
   const isNewNote = !selectedNote;
 
+  // Фокус на content при включении режима редактирования
+  useEffect(() => {
+    if (isEditing && !isNewNote && contentInputRef.current) {
+      InteractionManager.runAfterInteractions(() => {
+        contentInputRef.current.focus();
+        // Устанавливаем курсор в конец текста
+        setTimeout(() => {
+          contentInputRef.current.setNativeProps({
+            selection: { start: note.content.length, end: note.content.length }
+          });
+        }, 100);
+      });
+    }
+  }, [isEditing]);
+
+  // Для новой заметки фокус на content
   useEffect(() => {
     if (isNewNote) {
       const focusTask = InteractionManager.runAfterInteractions(() => {
@@ -37,7 +55,6 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
           }
         }, 100);
       });
-      
       return () => focusTask.cancel();
     }
   }, [isNewNote]);
@@ -88,9 +105,15 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
             text: 'Выйти', 
             onPress: () => {
               setNavigationStack(prev => prev.slice(0, -1));
-              if (comingFromSearch) {
-                setCurrentScreen('search');
-                setTimeout(() => { setSearchQuery(searchQuery); }, 100);
+              // ВСЕГДА переходим в папку с заметкой, а не в поиск
+              if (selectedNote) {
+                setCurrentScreen('notes');
+                setCurrentFolder(selectedNote.folder);
+                setSearchQuery('');
+              } else if (comingFromSearch) {
+                setCurrentScreen('notes');
+                setCurrentFolder(currentFolder);
+                setSearchQuery('');
               } else {
                 const prevScreen = navigationStack[navigationStack.length - 1] || 'notes';
                 setCurrentScreen(prevScreen);
@@ -101,9 +124,15 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
       );
     } else {
       setNavigationStack(prev => prev.slice(0, -1));
-      if (comingFromSearch) {
-        setCurrentScreen('search');
-        setTimeout(() => { setSearchQuery(searchQuery); }, 100);
+      // ВСЕГДА переходим в папку с заметкой
+      if (selectedNote) {
+        setCurrentScreen('notes');
+        setCurrentFolder(selectedNote.folder);
+        setSearchQuery('');
+      } else if (comingFromSearch) {
+        setCurrentScreen('notes');
+        setCurrentFolder(currentFolder);
+        setSearchQuery('');
       } else {
         const prevScreen = navigationStack[navigationStack.length - 1] || 'notes';
         setCurrentScreen(prevScreen);
@@ -114,6 +143,17 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
   const handleSave = () => {
     if (hasChanges) onSave({ ...note, updatedAt: Date.now() });
     else onSave(note);
+    setIsEditing(false);
+  };
+
+  const handleEditPress = () => {
+    setIsEditing(true);
+  };
+
+  const handleTitlePress = () => {
+    if (!isEditing && titleInputRef.current) {
+      titleInputRef.current.focus();
+    }
   };
 
   const buttonSize = 70;
@@ -150,27 +190,29 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
       <View style={{ flex: 1 }}>
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
           <TextInput 
+            ref={titleInputRef}
             style={{ fontSize: settings.fontSize + 2, fontWeight: 'bold', paddingVertical: 8, color: '#333' }} 
             placeholder="Заголовок" 
             placeholderTextColor="#999" 
             maxLength={TITLE_MAX_LENGTH} 
             value={note.title} 
             onChangeText={t => setNote({ ...note, title: t })}
-            editable={!isInTrash}
+            editable={!isInTrash && isEditing}
+            onPress={handleTitlePress}
           />
           <View style={{ height: 2, backgroundColor: note.color || brandColor, width: '100%', marginTop: 4 }} />
         </View>
 
         <TextInput 
           ref={contentInputRef}
-          style={{ flex: 1, fontSize: settings.fontSize, paddingHorizontal: 16, paddingVertical: 12, textAlignVertical: 'top' }} 
+          style={{ flex: 1, fontSize: settings.fontSize, paddingHorizontal: 16, paddingVertical: 12, textAlignVertical: 'top', color: '#333' }} 
           placeholder="Текст заметки..." 
           placeholderTextColor="#999" 
           multiline 
           maxLength={NOTE_MAX_LENGTH} 
           value={note.content} 
           onChangeText={t => setNote({ ...note, content: t })}
-          editable={!isInTrash}
+          editable={!isInTrash && isEditing}
         />
       </View>
 
@@ -188,9 +230,9 @@ const EditNoteScreen = ({ selectedNote, currentFolder, notes, settings, navigati
           elevation: 5, 
           zIndex: 1000 
         }} 
-        onPress={handleSave}
+        onPress={isEditing ? handleSave : handleEditPress}
       >
-        <MaterialIcons name="check" size={36} color="white" />
+        <MaterialIcons name={isEditing ? "check" : "edit"} size={36} color="white" />
       </TouchableOpacity>
 
       <ColorPickerModal 
