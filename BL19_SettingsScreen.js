@@ -9,10 +9,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Header from './BL04_Header';
 import { NOTE_COLORS, getBrandColor } from './BL02_Constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
-const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, notes, folders, onBrandColorChange }) => {
+const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, notes, folders, onBrandColorChange, onDataRestored }) => {
   const fontSizeOptions = [14, 16, 18, 20, 22, 24];
   const brandColor = getBrandColor(settings);
   const [logs, setLogs] = useState([]);
@@ -217,6 +217,16 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
     }
   };
 
+  // Новая функция для перехода к управлению папками
+  const handleManageFolders = () => {
+    setCurrentScreen('folders');
+  };
+
+  // Заглушка для "Обновить медиатеку"
+  const handleRefreshMedia = () => {
+    Alert.alert('Информация', 'Функция в разработке');
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <Header 
@@ -284,7 +294,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
         {/* Резервное копирование */}
         <View style={{ marginBottom: 32 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Резервное копирование</Text>
-          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20, gap: 12 }}>
+          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20 }}>
             <TouchableOpacity 
               style={{ 
                 backgroundColor: brandColor, 
@@ -292,7 +302,8 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
                 borderRadius: 12, 
                 flexDirection: 'row', 
                 alignItems: 'center', 
-                justifyContent: 'center'
+                justifyContent: 'center',
+                marginBottom: 12
               }} 
               onPress={handleBackup}
             >
@@ -322,6 +333,49 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
             >
               <MaterialIcons name="restore" size={24} color="white" style={{ marginRight: 8 }} />
               <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Восстановить</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Управление папками */}
+        <View style={{ marginBottom: 32 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Управление папками</Text>
+          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20 }}>
+            <TouchableOpacity 
+              style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                paddingVertical: 8
+              }} 
+              onPress={handleManageFolders}
+            >
+              <Text style={{ fontSize: 16, color: '#333' }}>Выбор папок</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 16, color: '#666', marginRight: 8 }}>{folders.length}/48</Text>
+                <MaterialIcons name="chevron-right" size={24} color="#999" />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Обновить медиатеку (заглушка) */}
+        <View style={{ marginBottom: 32 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Медиатека</Text>
+          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20 }}>
+            <TouchableOpacity 
+              style={{ 
+                backgroundColor: brandColor, 
+                padding: 16, 
+                borderRadius: 12, 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                justifyContent: 'center'
+              }} 
+              onPress={handleRefreshMedia}
+            >
+              <MaterialIcons name="refresh" size={24} color="white" style={{ marginRight: 8 }} />
+              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Обновить медиатеку</Text>
             </TouchableOpacity>
           </View>
         </View>
