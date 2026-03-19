@@ -60,7 +60,7 @@ const NotesListScreen = ({ currentFolder, sortedNotes, handleNotePress, setSelec
       >
         {/* Дополнительная кнопка для корзины */}
         {isInTrash && sortedNotes.length > 0 && (
-          <TouchableOpacity onPress={handleEmptyTrash} style={{ marginRight: 20 }}>
+          <TouchableOpacity onPress={handleEmptyTrash}>
             <MaterialIcons name="delete-sweep" size={24} color="white" />
           </TouchableOpacity>
         )}
