@@ -11,11 +11,15 @@ import { NOTE_COLORS, getBrandColor } from './BL02_Constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { NativeModules } from 'react-native';
+
+const { WidgetDataModule } = NativeModules;
 
 const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, notes, folders, onBrandColorChange, onDataRestored }) => {
   const fontSizeOptions = [14, 16, 18, 20, 22, 24];
   const brandColor = getBrandColor(settings);
   const [logs, setLogs] = useState([]);
+  const [widgetLogs, setWidgetLogs] = useState([]);
 
   const addLog = (message, data) => {
     const time = new Date().toLocaleTimeString('ru-RU', { 
@@ -30,6 +34,15 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
     };
     console.log(`📋 [${time}] ${message}`, data || '');
     setLogs(prev => [...prev.slice(-9), logEntry]);
+  };
+
+  const addWidgetLog = (message) => {
+    const time = new Date().toLocaleTimeString('ru-RU', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
+    setWidgetLogs(prev => [...prev, `[${time}] ${message}`]);
   };
 
   useEffect(() => {
@@ -217,14 +230,83 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
     }
   };
 
-  // Новая функция для перехода к управлению папками
-  const handleManageFolders = () => {
-    setCurrentScreen('folders');
-  };
-
-  // Заглушка для "Обновить медиатеку"
-  const handleRefreshMedia = () => {
-    Alert.alert('Информация', 'Функция в разработке');
+  // Функция для диагностики виджета
+  const diagnoseWidget = async () => {
+    addWidgetLog('🔍 Начинаем диагностику виджета...');
+    
+    // Проверяем нативный модуль
+    if (Platform.OS === 'android') {
+      if (WidgetDataModule) {
+        addWidgetLog('✅ Native module WidgetDataModule доступен');
+      } else {
+        addWidgetLog('❌ Native module WidgetDataModule НЕ доступен');
+      }
+    } else {
+      addWidgetLog('ℹ️ Не Android платформа');
+    }
+    
+    // Проверяем заметки в главной папке
+    const mainFolderNotes = notes.filter(n => n.folder === 'Главная' && !n.deleted);
+    addWidgetLog(`📊 Заметок в папке "Главная": ${mainFolderNotes.length}`);
+    
+    if (mainFolderNotes.length === 0) {
+      addWidgetLog('⚠️ Создайте хотя бы одну заметку в папке "Главная"');
+    } else {
+      mainFolderNotes.forEach((note, index) => {
+        addWidgetLog(`  ${index + 1}. ${note.title || 'Без названия'}`);
+      });
+    }
+    
+    // Формируем JSON для виджета
+    const widgetNotes = mainFolderNotes.map(note => ({
+      id: note.id,
+      title: note.title || 'Без названия',
+      content: note.content || '...',
+      date: note.updatedAt || note.createdAt || Date.now()
+    }));
+    
+    const notesJson = JSON.stringify(widgetNotes, null, 2);
+    addWidgetLog(`📦 JSON для виджета (${notesJson.length} символов):`);
+    addWidgetLog(notesJson);
+    
+    // Проверяем AsyncStorage
+    try {
+      const savedJson = await AsyncStorage.getItem('@widget_notes');
+      addWidgetLog(`💾 В AsyncStorage: ${savedJson ? savedJson.substring(0, 100) + '...' : 'null'}`);
+    } catch (e) {
+      addWidgetLog(`❌ Ошибка чтения AsyncStorage: ${e.message}`);
+    }
+    
+    // Создаем заметки с логами
+    const timestamp = new Date().toLocaleString('ru-RU');
+    const logNote = {
+      id: Date.now() + '-widget-log',
+      title: `📱 Диагностика виджета ${timestamp}`,
+      content: widgetLogs.join('\n'),
+      folder: 'Главная',
+      color: brandColor,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      deleted: false,
+      pinned: false
+    };
+    
+    // Добавляем заметку с логами
+    const updatedNotes = [...notes, logNote];
+    await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
+    
+    Alert.alert(
+      '✅ Диагностика завершена',
+      `Создана заметка "${logNote.title}" в папке "Главная" с логами виджета.`,
+      [
+        { 
+          text: 'OK', 
+          onPress: () => {
+            setCurrentScreen('notes');
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -294,7 +376,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
         {/* Резервное копирование */}
         <View style={{ marginBottom: 32 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Резервное копирование</Text>
-          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20 }}>
+          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20, gap: 12 }}>
             <TouchableOpacity 
               style={{ 
                 backgroundColor: brandColor, 
@@ -302,8 +384,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
                 borderRadius: 12, 
                 flexDirection: 'row', 
                 alignItems: 'center', 
-                justifyContent: 'center',
-                marginBottom: 12
+                justifyContent: 'center'
               }} 
               onPress={handleBackup}
             >
@@ -337,46 +418,27 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
           </View>
         </View>
 
-        {/* Управление папками */}
+        {/* Диагностика виджета */}
         <View style={{ marginBottom: 32 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Управление папками</Text>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Диагностика виджета</Text>
           <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20 }}>
             <TouchableOpacity 
               style={{ 
-                flexDirection: 'row', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                paddingVertical: 8
-              }} 
-              onPress={handleManageFolders}
-            >
-              <Text style={{ fontSize: 16, color: '#333' }}>Выбор папок</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 16, color: '#666', marginRight: 8 }}>{folders.length}/48</Text>
-                <MaterialIcons name="chevron-right" size={24} color="#999" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Обновить медиатеку (заглушка) */}
-        <View style={{ marginBottom: 32 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Медиатека</Text>
-          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20 }}>
-            <TouchableOpacity 
-              style={{ 
-                backgroundColor: brandColor, 
+                backgroundColor: '#4CAF50', 
                 padding: 16, 
                 borderRadius: 12, 
                 flexDirection: 'row', 
                 alignItems: 'center', 
                 justifyContent: 'center'
               }} 
-              onPress={handleRefreshMedia}
+              onPress={diagnoseWidget}
             >
-              <MaterialIcons name="refresh" size={24} color="white" style={{ marginRight: 8 }} />
-              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Обновить медиатеку</Text>
+              <MaterialIcons name="bug-report" size={24} color="white" style={{ marginRight: 8 }} />
+              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Проверить виджет</Text>
             </TouchableOpacity>
+            <Text style={{ color: '#666', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+              Будет создана заметка с логами диагностики в папке "Главная"
+            </Text>
           </View>
         </View>
       </ScrollView>
