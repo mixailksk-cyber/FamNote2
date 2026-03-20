@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
 import android.util.Log
-import android.widget.Toast
 import com.mkhailksk.famnotes.MainActivity
 import com.mkhailksk.famnotes.R
 import org.json.JSONArray
@@ -17,67 +16,21 @@ class NotesWidget : AppWidgetProvider() {
     
     companion object {
         private const val TAG = "FamNotesWidget"
-        private var lastToastTime = 0L
-        
-        fun showDebugToast(context: Context, message: String) {
-            try {
-                val now = System.currentTimeMillis()
-                if (now - lastToastTime > 3000) {
-                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                    lastToastTime = now
-                }
-                Log.d(TAG, message)
-            } catch (e: Exception) {
-                Log.e(TAG, "Toast error", e)
-            }
-        }
         
         fun updateWidgetNotes(context: Context, notesJson: String) {
-            Log.d(TAG, "📥 updateWidgetNotes called")
-            showDebugToast(context, "Виджет: получены данные (${notesJson.length} символов)")
-            
             try {
-                // Сохраняем в файл
                 val file = File(context.filesDir, "widget_notes.json")
                 file.writeText(notesJson)
-                Log.d(TAG, "💾 Saved to: ${file.absolutePath}, exists: ${file.exists()}, size: ${file.length()}")
-                showDebugToast(context, "Виджет: данные сохранены в файл")
                 
-                // Обновляем виджеты
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val componentName = android.content.ComponentName(context, NotesWidget::class.java)
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
                 
-                Log.d(TAG, "Found ${appWidgetIds.size} widgets")
-                showDebugToast(context, "Виджет: найдено виджетов: ${appWidgetIds.size}")
-                
-                if (appWidgetIds.isNotEmpty()) {
-                    val widget = NotesWidget()
-                    widget.onUpdate(context, appWidgetManager, appWidgetIds)
-                }
-                
+                val widget = NotesWidget()
+                widget.onUpdate(context, appWidgetManager, appWidgetIds)
             } catch (e: Exception) {
-                Log.e(TAG, "Error updating widget", e)
-                showDebugToast(context, "Виджет: ошибка - ${e.message}")
+                Log.e(TAG, "Error", e)
             }
-        }
-        
-        private fun getNotesFromFile(context: Context): String {
-            try {
-                val file = File(context.filesDir, "widget_notes.json")
-                Log.d(TAG, "Looking for file: ${file.absolutePath}, exists: ${file.exists()}")
-                
-                if (file.exists()) {
-                    val content = file.readText()
-                    Log.d(TAG, "File content length: ${content.length}")
-                    return content
-                } else {
-                    Log.d(TAG, "File does not exist")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error reading file", e)
-            }
-            return "[]"
         }
     }
     
@@ -86,18 +39,13 @@ class NotesWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        showDebugToast(context, "Виджет: onUpdate вызван для ${appWidgetIds.size} виджетов")
-        
-        for (appWidgetId in appWidgetIds) {
-            try {
+        try {
+            val file = File(context.filesDir, "widget_notes.json")
+            val notesJson = if (file.exists()) file.readText() else "[]"
+            
+            for (appWidgetId in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.widget_notes)
-                
-                val notesJson = getNotesFromFile(context)
-                Log.d(TAG, "Notes JSON: ${notesJson.take(200)}")
-                
                 val notesText = formatAllNotes(notesJson)
-                Log.d(TAG, "Formatted text: $notesText")
-                
                 views.setTextViewText(R.id.widget_notes_list, notesText)
                 
                 val intent = Intent(context, MainActivity::class.java).apply {
@@ -111,14 +59,9 @@ class NotesWidget : AppWidgetProvider() {
                 
                 views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
-                
-                Log.d(TAG, "Widget $appWidgetId updated")
-                showDebugToast(context, "Виджет: обновлен")
-                
-            } catch (e: Exception) {
-                Log.e(TAG, "Error updating widget $appWidgetId", e)
-                showDebugToast(context, "Виджет: ошибка - ${e.message}")
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating widgets", e)
         }
     }
     
@@ -141,17 +84,7 @@ class NotesWidget : AppWidgetProvider() {
             }
             result.toString()
         } catch (e: Exception) {
-            "• Ошибка загрузки: ${e.message}"
+            "• Ошибка загрузки"
         }
-    }
-    
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        showDebugToast(context, "Виджет: включен")
-    }
-    
-    override fun onDisabled(context: Context) {
-        super.onDisabled(context)
-        showDebugToast(context, "Виджет: отключен")
     }
 }
