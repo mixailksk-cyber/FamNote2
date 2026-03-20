@@ -7,7 +7,10 @@ import com.facebook.react.uimanager.ViewManager
 
 class WidgetPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(WidgetDataModule(reactContext))
+        val modules = mutableListOf<NativeModule>()
+        modules.add(WidgetDataModule(reactContext))
+        android.util.Log.d("WidgetPackage", "✅ WidgetDataModule registered")
+        return modules
     }
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
