@@ -36,16 +36,40 @@ jobs:
           rm -rf ios
           rm -rf node_modules/.cache
       
-      - name: Expo prebuild (clean)
+      - name: Check widget files
+        run: |
+          echo "Checking widget files..."
+          find . -name "*.xml" -path "*/widget*" -o -name "*.kt" -path "*/widget*"
+          echo "---"
+          ls -la widgets/android/src/main/res/layout/ 2>/dev/null || echo "No widget layout files"
+          echo "---"
+          ls -la android/app/src/main/java/com/mkhailksk/famnotes/widget/ 2>/dev/null || echo "No widget java files"
+      
+      - name: Expo prebuild
         run: npx expo prebuild --clean --platform android
       
-      - name: Build Android APK with stacktrace
+      - name: Check after prebuild
+        run: |
+          echo "Files after prebuild:"
+          ls -la android/app/src/main/res/layout/ | head -20
+          echo "---"
+          ls -la android/app/src/main/java/com/mkhailksk/famnotes/ | head -20
+      
+      - name: Build Android APK with full logs
         run: |
           cd android
           chmod +x gradlew
           ./gradlew clean
-          ./gradlew assembleRelease --stacktrace
-        continue-on-error: false
+          ./gradlew assembleRelease --stacktrace --info --no-daemon 2>&1 | tee build.log
+        continue-on-error: true
+      
+      - name: Show error if build failed
+        if: failure()
+        run: |
+          echo "=== BUILD LOG ==="
+          tail -200 android/build.log
+          echo "=== ERROR SUMMARY ==="
+          grep -A 20 "FAILURE\|error\|Error\|Exception" android/build.log | tail -100
       
       - name: Upload APK
         if: success()
@@ -54,8 +78,8 @@ jobs:
           name: app-release
           path: android/app/build/outputs/apk/release/*.apk
       
-      - name: Upload build logs on failure
-        if: failure()
+      - name: Upload build logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
