@@ -19,7 +19,6 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
   const fontSizeOptions = [14, 16, 18, 20, 22, 24];
   const brandColor = getBrandColor(settings);
   const [logs, setLogs] = useState([]);
-  const [widgetLogs, setWidgetLogs] = useState([]);
 
   const addLog = (message, data) => {
     const time = new Date().toLocaleTimeString('ru-RU', { 
@@ -34,15 +33,6 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
     };
     console.log(`📋 [${time}] ${message}`, data || '');
     setLogs(prev => [...prev.slice(-9), logEntry]);
-  };
-
-  const addWidgetLog = (message) => {
-    const time = new Date().toLocaleTimeString('ru-RU', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
-    });
-    setWidgetLogs(prev => [...prev, `[${time}] ${message}`]);
   };
 
   useEffect(() => {
@@ -232,28 +222,33 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
 
   // Функция для диагностики виджета
   const diagnoseWidget = async () => {
-    addWidgetLog('🔍 Начинаем диагностику виджета...');
+    const logs = [];
+    const timestamp = new Date().toLocaleString('ru-RU');
+    
+    logs.push(`🔍 Диагностика виджета ${timestamp}`);
+    logs.push('='.repeat(40));
     
     // Проверяем нативный модуль
     if (Platform.OS === 'android') {
       if (WidgetDataModule) {
-        addWidgetLog('✅ Native module WidgetDataModule доступен');
+        logs.push('✅ Native module WidgetDataModule доступен');
       } else {
-        addWidgetLog('❌ Native module WidgetDataModule НЕ доступен');
+        logs.push('❌ Native module WidgetDataModule НЕ доступен');
       }
     } else {
-      addWidgetLog('ℹ️ Не Android платформа');
+      logs.push('ℹ️ Не Android платформа');
     }
     
     // Проверяем заметки в главной папке
     const mainFolderNotes = notes.filter(n => n.folder === 'Главная' && !n.deleted);
-    addWidgetLog(`📊 Заметок в папке "Главная": ${mainFolderNotes.length}`);
+    logs.push(`📊 Заметок в папке "Главная": ${mainFolderNotes.length}`);
     
     if (mainFolderNotes.length === 0) {
-      addWidgetLog('⚠️ Создайте хотя бы одну заметку в папке "Главная"');
+      logs.push('⚠️ Создайте хотя бы одну заметку в папке "Главная"');
     } else {
+      logs.push('📝 Список заметок:');
       mainFolderNotes.forEach((note, index) => {
-        addWidgetLog(`  ${index + 1}. ${note.title || 'Без названия'}`);
+        logs.push(`  ${index + 1}. ${note.title || 'Без названия'} (ID: ${note.id})`);
       });
     }
     
@@ -265,47 +260,44 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
       date: note.updatedAt || note.createdAt || Date.now()
     }));
     
-    const notesJson = JSON.stringify(widgetNotes, null, 2);
-    addWidgetLog(`📦 JSON для виджета (${notesJson.length} символов):`);
-    addWidgetLog(notesJson);
+    const notesJson = JSON.stringify(widgetNotes);
+    logs.push(`📦 JSON для виджета (${notesJson.length} символов):`);
+    logs.push(notesJson);
     
     // Проверяем AsyncStorage
     try {
       const savedJson = await AsyncStorage.getItem('@widget_notes');
-      addWidgetLog(`💾 В AsyncStorage: ${savedJson ? savedJson.substring(0, 100) + '...' : 'null'}`);
+      logs.push(`💾 В AsyncStorage: ${savedJson ? savedJson.substring(0, 100) + '...' : 'null'}`);
     } catch (e) {
-      addWidgetLog(`❌ Ошибка чтения AsyncStorage: ${e.message}`);
+      logs.push(`❌ Ошибка чтения AsyncStorage: ${e.message}`);
     }
     
-    // Создаем заметки с логами
-    const timestamp = new Date().toLocaleString('ru-RU');
-    const logNote = {
-      id: Date.now() + '-widget-log',
-      title: `📱 Диагностика виджета ${timestamp}`,
-      content: widgetLogs.join('\n'),
-      folder: 'Главная',
-      color: brandColor,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      deleted: false,
-      pinned: false
-    };
+    // Пытаемся вызвать нативный модуль
+    if (Platform.OS === 'android' && WidgetDataModule) {
+      try {
+        logs.push('📤 Отправляем данные в нативный модуль...');
+        WidgetDataModule.updateWidgetNotes(notesJson);
+        logs.push('✅ Данные отправлены');
+      } catch (e) {
+        logs.push(`❌ Ошибка отправки: ${e.message}`);
+      }
+    }
     
-    // Добавляем заметку с логами
-    const updatedNotes = [...notes, logNote];
-    await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
-    
+    // Показываем диалог с логами
     Alert.alert(
-      '✅ Диагностика завершена',
-      `Создана заметка "${logNote.title}" в папке "Главная" с логами виджета.`,
+      '📱 Диагностика виджета',
+      logs.join('\n'),
       [
         { 
-          text: 'OK', 
+          text: 'Копировать', 
           onPress: () => {
-            setCurrentScreen('notes');
+            Clipboard.setStringAsync(logs.join('\n'));
+            Alert.alert('✅ Скопировано', 'Логи скопированы в буфер обмена');
           }
-        }
-      ]
+        },
+        { text: 'OK' }
+      ],
+      { cancelable: true }
     );
   };
 
@@ -437,7 +429,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
               <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Проверить виджет</Text>
             </TouchableOpacity>
             <Text style={{ color: '#666', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
-              Будет создана заметка с логами диагностики в папке "Главная"
+              Результат появится в диалоговом окне
             </Text>
           </View>
         </View>
