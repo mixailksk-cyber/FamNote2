@@ -3,6 +3,7 @@
 // =====================================================
 import { NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 
 const { WidgetDataModule } = NativeModules;
 
@@ -15,6 +16,7 @@ export const updateWidgetData = async (notes) => {
       return;
     }
 
+    // Берем только заметки из папки "Главная"
     const mainFolderNotes = notes
       .filter(note => note.folder === 'Главная' && !note.deleted)
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
@@ -27,12 +29,24 @@ export const updateWidgetData = async (notes) => {
     
     const notesJson = JSON.stringify(mainFolderNotes);
     console.log(`✅ [WidgetBridge] Filtered ${mainFolderNotes.length} notes`);
+    console.log(`📦 [WidgetBridge] JSON length: ${notesJson.length}`);
     
     // Сохраняем в AsyncStorage
     await AsyncStorage.setItem('@widget_notes', notesJson);
     console.log('💾 [WidgetBridge] Saved to AsyncStorage');
     
-    // Пытаемся отправить в нативный модуль (если доступен)
+    // Сохраняем в файл через FileSystem (экспо-способ)
+    if (Platform.OS === 'android') {
+      try {
+        const fileUri = FileSystem.documentDirectory + 'widget_notes.json';
+        await FileSystem.writeAsStringAsync(fileUri, notesJson);
+        console.log(`💾 [WidgetBridge] Saved to file: ${fileUri}`);
+      } catch (e) {
+        console.log('❌ [WidgetBridge] FileSystem error:', e);
+      }
+    }
+    
+    // Пытаемся отправить в нативный модуль
     if (Platform.OS === 'android' && WidgetDataModule) {
       try {
         WidgetDataModule.updateWidgetNotes(notesJson);
@@ -41,7 +55,7 @@ export const updateWidgetData = async (notes) => {
         console.log('❌ [WidgetBridge] Native module error:', e);
       }
     } else {
-      console.log('⚠️ [WidgetBridge] Native module not available, using AsyncStorage only');
+      console.log('⚠️ [WidgetBridge] Native module not available');
     }
     
   } catch (error) {
