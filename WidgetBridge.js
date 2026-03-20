@@ -4,6 +4,7 @@
 import { NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Получаем нативный модуль
 const { WidgetDataModule } = NativeModules;
 
 export const updateWidgetData = async (notes) => {
@@ -13,6 +14,7 @@ export const updateWidgetData = async (notes) => {
       return;
     }
 
+    // Берем только заметки из Главной папки (не удаленные)
     const mainFolderNotes = notes
       .filter(note => note.folder === 'Главная' && !note.deleted)
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
@@ -25,11 +27,16 @@ export const updateWidgetData = async (notes) => {
     
     const notesJson = JSON.stringify(mainFolderNotes);
     
-    if (Platform.OS === 'android' && WidgetDataModule) {
-      WidgetDataModule.updateWidgetNotes(notesJson);
-    }
-    
+    // Сохраняем в AsyncStorage для резерва
     await AsyncStorage.setItem('@widget_notes', notesJson);
+    
+    // Отправляем в нативный модуль, если он существует
+    if (Platform.OS === 'android' && WidgetDataModule) {
+      console.log('Sending notes to widget module:', mainFolderNotes.length);
+      WidgetDataModule.updateWidgetNotes(notesJson);
+    } else {
+      console.log('Widget module not available on this platform');
+    }
     
   } catch (error) {
     console.error('Error updating widget:', error);
