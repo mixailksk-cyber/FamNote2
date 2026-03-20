@@ -3,7 +3,7 @@
 // =====================================================
 import { NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const { WidgetDataModule } = NativeModules;
 
@@ -12,7 +12,6 @@ export const updateWidgetData = async (notes) => {
     console.log('🔄 [WidgetBridge] updateWidgetData called');
     
     if (!notes || !Array.isArray(notes)) {
-      console.log('❌ [WidgetBridge] No notes array provided');
       return;
     }
 
@@ -23,43 +22,37 @@ export const updateWidgetData = async (notes) => {
       .map(note => ({
         id: note.id,
         title: note.title || 'Без названия',
-        content: note.content || '...',
+        content: (note.content || '').substring(0, 100),
         date: note.updatedAt || note.createdAt || Date.now()
       }));
     
     const notesJson = JSON.stringify(mainFolderNotes);
-    console.log(`✅ [WidgetBridge] Filtered ${mainFolderNotes.length} notes`);
-    console.log(`📦 [WidgetBridge] JSON length: ${notesJson.length}`);
     
     // Сохраняем в AsyncStorage
     await AsyncStorage.setItem('@widget_notes', notesJson);
-    console.log('💾 [WidgetBridge] Saved to AsyncStorage');
     
-    // Сохраняем в файл через FileSystem (экспо-способ)
-    if (Platform.OS === 'android') {
+    // Сохраняем в файл через FileSystem
+    if (Platform.OS === 'android' && FileSystem.documentDirectory) {
       try {
         const fileUri = FileSystem.documentDirectory + 'widget_notes.json';
         await FileSystem.writeAsStringAsync(fileUri, notesJson);
-        console.log(`💾 [WidgetBridge] Saved to file: ${fileUri}`);
+        console.log('💾 Saved to file:', fileUri);
       } catch (e) {
-        console.log('❌ [WidgetBridge] FileSystem error:', e);
+        console.log('FileSystem error:', e);
       }
     }
     
-    // Пытаемся отправить в нативный модуль
+    // Отправляем в нативный модуль
     if (Platform.OS === 'android' && WidgetDataModule) {
       try {
         WidgetDataModule.updateWidgetNotes(notesJson);
-        console.log('📱 [WidgetBridge] Sent to native module');
       } catch (e) {
-        console.log('❌ [WidgetBridge] Native module error:', e);
+        console.log('Native module error:', e);
       }
-    } else {
-      console.log('⚠️ [WidgetBridge] Native module not available');
     }
     
   } catch (error) {
-    console.error('❌ [WidgetBridge] Error updating widget:', error);
+    console.error('Error updating widget:', error);
   }
 };
 
@@ -68,7 +61,6 @@ export const getWidgetNotes = async () => {
     const notesJson = await AsyncStorage.getItem('@widget_notes');
     return notesJson ? JSON.parse(notesJson) : [];
   } catch (error) {
-    console.error('Error getting widget notes:', error);
     return [];
   }
 };
