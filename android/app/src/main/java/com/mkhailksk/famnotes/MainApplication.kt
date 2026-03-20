@@ -15,10 +15,11 @@ class MainApplication : Application(), ReactApplication {
         override fun getUseDeveloperSupport(): Boolean = BuildConfig.DEBUG
 
         override fun getPackages(): List<ReactPackage> {
-            // Список пакетов от Expo
+            // Получаем стандартные пакеты от Expo
             val packages = PackageList(this).packages
-            // Добавляем наш виджет-пакет
-            return packages + WidgetPackage()
+            // Добавляем наш пакет для виджета
+            packages.add(WidgetPackage())
+            return packages
         }
 
         override fun getJSMainModuleName(): String = "index"
