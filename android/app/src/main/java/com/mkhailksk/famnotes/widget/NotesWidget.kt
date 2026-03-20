@@ -24,17 +24,21 @@ class NotesWidget : AppWidgetProvider() {
             try {
                 val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 prefs.edit().putString(NOTES_KEY, notesJson).apply()
-                Log.d(TAG, "💾 Saved to SharedPreferences")
+                Log.d(TAG, "💾 Saved to SharedPreferences: $notesJson")
                 
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val componentName = android.content.ComponentName(context, NotesWidget::class.java)
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
                 
-                Log.d(TAG, "Updating ${appWidgetIds.size} widgets")
+                Log.d(TAG, "Found ${appWidgetIds.size} widgets to update")
                 
-                // Создаем экземпляр и вызываем onUpdate
-                val widget = NotesWidget()
-                widget.onUpdate(context, appWidgetManager, appWidgetIds)
+                if (appWidgetIds.isNotEmpty()) {
+                    // Создаем экземпляр и вызываем onUpdate
+                    val widget = NotesWidget()
+                    widget.onUpdate(context, appWidgetManager, appWidgetIds)
+                } else {
+                    Log.d(TAG, "No widgets found to update")
+                }
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Error updating widget notes", e)
@@ -60,6 +64,8 @@ class NotesWidget : AppWidgetProvider() {
                 Log.d(TAG, "Notes JSON from prefs: $notesJson")
                 
                 val notesText = formatAllNotes(notesJson)
+                Log.d(TAG, "Formatted text for widget: $notesText")
+                
                 views.setTextViewText(R.id.widget_notes_list, notesText)
                 
                 val intent = Intent(context, MainActivity::class.java).apply {
@@ -74,7 +80,7 @@ class NotesWidget : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
                 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
-                Log.d(TAG, "Widget $appWidgetId updated successfully with text: $notesText")
+                Log.d(TAG, "Widget $appWidgetId updated successfully")
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Error updating widget $appWidgetId", e)
@@ -84,7 +90,7 @@ class NotesWidget : AppWidgetProvider() {
     
     private fun formatAllNotes(notesJson: String?): String {
         if (notesJson.isNullOrEmpty() || notesJson == "[]") {
-            Log.d(TAG, "No notes to display")
+            Log.d(TAG, "No notes to display (empty or null JSON)")
             return "• Нет заметок"
         }
         
@@ -117,6 +123,14 @@ class NotesWidget : AppWidgetProvider() {
     
     override fun onEnabled(context: Context) {
         Log.d(TAG, "onEnabled - Widget first enabled")
+        // При первом включении виджета запрашиваем данные
+        try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val notesJson = prefs.getString(NOTES_KEY, "[]") ?: "[]"
+            Log.d(TAG, "onEnabled - Current notes in prefs: $notesJson")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in onEnabled", e)
+        }
     }
     
     override fun onDisabled(context: Context) {
