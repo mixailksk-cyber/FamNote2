@@ -10,39 +10,48 @@ import android.util.Log
 import com.mkhailksk.famnotes.MainActivity
 import com.mkhailksk.famnotes.R
 import org.json.JSONArray
+import java.io.File
 
 class NotesWidget : AppWidgetProvider() {
     
     companion object {
         private const val TAG = "FamNotesWidget"
-        private const val PREFS_NAME = "com.mkhailksk.famnotes.widget"
-        private const val NOTES_KEY = "widget_notes"
         
         fun updateWidgetNotes(context: Context, notesJson: String) {
             Log.d(TAG, "📥 updateWidgetNotes called")
             
             try {
-                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                prefs.edit().putString(NOTES_KEY, notesJson).apply()
-                Log.d(TAG, "💾 Saved to SharedPreferences: $notesJson")
+                // Сохраняем в файл как запасной вариант
+                val file = File(context.filesDir, "widget_notes.json")
+                file.writeText(notesJson)
+                Log.d(TAG, "💾 Saved to file: ${file.absolutePath}")
                 
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val componentName = android.content.ComponentName(context, NotesWidget::class.java)
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
                 
-                Log.d(TAG, "Found ${appWidgetIds.size} widgets to update")
+                Log.d(TAG, "Found ${appWidgetIds.size} widgets")
                 
-                if (appWidgetIds.isNotEmpty()) {
-                    // Создаем экземпляр и вызываем onUpdate
-                    val widget = NotesWidget()
-                    widget.onUpdate(context, appWidgetManager, appWidgetIds)
-                } else {
-                    Log.d(TAG, "No widgets found to update")
-                }
+                val widget = NotesWidget()
+                widget.onUpdate(context, appWidgetManager, appWidgetIds)
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Error updating widget notes", e)
             }
+        }
+        
+        private fun getNotesFromFile(context: Context): String {
+            try {
+                val file = File(context.filesDir, "widget_notes.json")
+                if (file.exists()) {
+                    val content = file.readText()
+                    Log.d(TAG, "📄 Read from file: ${content.take(100)}...")
+                    return content
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error reading file", e)
+            }
+            return "[]"
         }
     }
     
@@ -55,17 +64,12 @@ class NotesWidget : AppWidgetProvider() {
         
         for (appWidgetId in appWidgetIds) {
             try {
-                Log.d(TAG, "Updating widget $appWidgetId")
-                
                 val views = RemoteViews(context.packageName, R.layout.widget_notes)
-                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                val notesJson = prefs.getString(NOTES_KEY, "[]") ?: "[]"
                 
-                Log.d(TAG, "Notes JSON from prefs: $notesJson")
+                // Пытаемся получить данные из файла
+                val notesJson = getNotesFromFile(context)
                 
                 val notesText = formatAllNotes(notesJson)
-                Log.d(TAG, "Formatted text for widget: $notesText")
-                
                 views.setTextViewText(R.id.widget_notes_list, notesText)
                 
                 val intent = Intent(context, MainActivity::class.java).apply {
@@ -80,7 +84,7 @@ class NotesWidget : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
                 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
-                Log.d(TAG, "Widget $appWidgetId updated successfully")
+                Log.d(TAG, "Widget $appWidgetId updated")
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Error updating widget $appWidgetId", e)
@@ -90,14 +94,11 @@ class NotesWidget : AppWidgetProvider() {
     
     private fun formatAllNotes(notesJson: String?): String {
         if (notesJson.isNullOrEmpty() || notesJson == "[]") {
-            Log.d(TAG, "No notes to display (empty or null JSON)")
             return "• Нет заметок"
         }
         
         return try {
             val notesArray = JSONArray(notesJson)
-            Log.d(TAG, "Found ${notesArray.length()} notes in JSON")
-            
             if (notesArray.length() == 0) {
                 return "• Нет заметок"
             }
@@ -112,9 +113,7 @@ class NotesWidget : AppWidgetProvider() {
                     stringBuilder.append("\n")
                 }
             }
-            val result = stringBuilder.toString()
-            Log.d(TAG, "Formatted notes: $result")
-            result
+            stringBuilder.toString()
         } catch (e: Exception) {
             Log.e(TAG, "Error formatting notes", e)
             "• Ошибка загрузки"
@@ -122,18 +121,10 @@ class NotesWidget : AppWidgetProvider() {
     }
     
     override fun onEnabled(context: Context) {
-        Log.d(TAG, "onEnabled - Widget first enabled")
-        // При первом включении виджета запрашиваем данные
-        try {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val notesJson = prefs.getString(NOTES_KEY, "[]") ?: "[]"
-            Log.d(TAG, "onEnabled - Current notes in prefs: $notesJson")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in onEnabled", e)
-        }
+        Log.d(TAG, "onEnabled - Widget enabled")
     }
     
     override fun onDisabled(context: Context) {
-        Log.d(TAG, "onDisabled - Last widget removed")
+        Log.d(TAG, "onDisabled - Widget disabled")
     }
 }
