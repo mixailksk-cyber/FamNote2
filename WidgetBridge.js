@@ -4,19 +4,27 @@
 import { NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Получаем нативный модуль
 const { WidgetDataModule } = NativeModules;
 
 export const updateWidgetData = async (notes) => {
   try {
+    console.log('🔄 [WidgetBridge] updateWidgetData called');
+    
     if (!notes || !Array.isArray(notes)) {
-      console.log('No notes to update widget');
+      console.log('❌ [WidgetBridge] No notes array provided');
       return;
     }
 
-    // Берем только заметки из Главной папки (не удаленные)
+    console.log(`📊 [WidgetBridge] Total notes: ${notes.length}`);
+
+    // Берем только заметки из папки "Главная" (не удаленные)
     const mainFolderNotes = notes
-      .filter(note => note.folder === 'Главная' && !note.deleted)
+      .filter(note => {
+        const isMain = note.folder === 'Главная';
+        const notDeleted = !note.deleted;
+        console.log(`📝 [WidgetBridge] Note ${note.id}: folder=${note.folder}, deleted=${note.deleted}, isMain=${isMain}, notDeleted=${notDeleted}`);
+        return isMain && notDeleted;
+      })
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
       .map(note => ({
         id: note.id,
@@ -25,21 +33,27 @@ export const updateWidgetData = async (notes) => {
         date: note.updatedAt || note.createdAt || Date.now()
       }));
     
+    console.log(`✅ [WidgetBridge] Filtered notes for widget: ${mainFolderNotes.length}`);
+    
     const notesJson = JSON.stringify(mainFolderNotes);
+    console.log(`📦 [WidgetBridge] JSON: ${notesJson}`);
     
     // Сохраняем в AsyncStorage для резерва
     await AsyncStorage.setItem('@widget_notes', notesJson);
+    console.log('💾 [WidgetBridge] Saved to AsyncStorage');
     
-    // Отправляем в нативный модуль, если он существует
-    if (Platform.OS === 'android' && WidgetDataModule) {
-      console.log('Sending notes to widget module:', mainFolderNotes.length);
-      WidgetDataModule.updateWidgetNotes(notesJson);
-    } else {
-      console.log('Widget module not available on this platform');
+    // Отправляем в нативный модуль
+    if (Platform.OS === 'android') {
+      if (WidgetDataModule) {
+        console.log('📱 [WidgetBridge] Sending to native module');
+        WidgetDataModule.updateWidgetNotes(notesJson);
+      } else {
+        console.log('❌ [WidgetBridge] WidgetDataModule not available');
+      }
     }
     
   } catch (error) {
-    console.error('Error updating widget:', error);
+    console.error('❌ [WidgetBridge] Error updating widget:', error);
   }
 };
 
