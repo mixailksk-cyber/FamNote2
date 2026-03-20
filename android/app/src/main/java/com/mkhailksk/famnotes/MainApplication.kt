@@ -15,10 +15,10 @@ class MainApplication : Application(), ReactApplication {
         override fun getUseDeveloperSupport(): Boolean = BuildConfig.DEBUG
 
         override fun getPackages(): List<ReactPackage> {
-            // Получаем стандартные пакеты от Expo
             val packages = PackageList(this).packages
             // Добавляем наш пакет для виджета
             packages.add(WidgetPackage())
+            android.util.Log.d("MainApplication", "✅ Total packages: ${packages.size}")
             return packages
         }
 
@@ -36,6 +36,7 @@ class MainApplication : Application(), ReactApplication {
     override fun onCreate() {
         super.onCreate()
         SoLoader.init(this, false)
+        android.util.Log.d("MainApplication", "🚀 Application onCreate")
         if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
             load()
         }
