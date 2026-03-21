@@ -8,6 +8,7 @@ import * as Clipboard from 'expo-clipboard';
 import { MaterialIcons } from '@expo/vector-icons';
 import Header from './BL04_Header';
 import { NOTE_COLORS, getBrandColor } from './BL02_Constants';
+import { useTheme } from './BL21_ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -18,6 +19,7 @@ const { WidgetDataModule } = NativeModules;
 const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, notes, folders, onBrandColorChange, onDataRestored }) => {
   const fontSizeOptions = [14, 16, 18, 20, 22, 24];
   const brandColor = getBrandColor(settings);
+  const { theme, isDarkMode, toggleTheme } = useTheme();
   const [logs, setLogs] = useState([]);
 
   const addLog = (message, data) => {
@@ -308,7 +310,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <Header 
         title="Настройки" 
         showBack 
@@ -318,12 +320,14 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
         showSearch 
         onSearchPress={goToSearch} 
         brandColor={brandColor}
+        theme={theme}
       />
       
       <ScrollView style={{ flex: 1, padding: 20 }}>
+        {/* Размер текста */}
         <View style={{ marginBottom: 32 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Размер текста</Text>
-          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: theme.text, marginBottom: 16 }}>Размер текста</Text>
+          <View style={{ backgroundColor: theme.surface, borderRadius: 16, padding: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-around', flexWrap: 'wrap' }}>
               {fontSizeOptions.map((size) => (
                 <TouchableOpacity 
@@ -333,22 +337,23 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
                     width: 44, 
                     height: 44, 
                     borderRadius: 22, 
-                    backgroundColor: settings.fontSize === size ? brandColor : '#F0F0F0', 
+                    backgroundColor: settings.fontSize === size ? brandColor : theme.divider, 
                     justifyContent: 'center', 
                     alignItems: 'center', 
                     margin: 4 
                   }}
                 >
-                  <Text style={{ color: settings.fontSize === size ? 'white' : '#666' }}>{size}</Text>
+                  <Text style={{ color: settings.fontSize === size ? 'white' : theme.textSecondary }}>{size}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         </View>
 
+        {/* Цвет бренда */}
         <View style={{ marginBottom: 32 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Цвет бренда</Text>
-          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: theme.text, marginBottom: 16 }}>Цвет бренда</Text>
+          <View style={{ backgroundColor: theme.surface, borderRadius: 16, padding: 20 }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
               {NOTE_COLORS.map((color, index) => (
                 <TouchableOpacity 
@@ -361,7 +366,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
                     backgroundColor: color, 
                     margin: 6, 
                     borderWidth: brandColor === color ? 3 : 0, 
-                    borderColor: '#333' 
+                    borderColor: theme.text 
                   }} 
                 />
               ))}
@@ -369,9 +374,46 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
           </View>
         </View>
 
+        {/* Тёмная тема */}
         <View style={{ marginBottom: 32 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Резервное копирование</Text>
-          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20, gap: 12 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: theme.text, marginBottom: 16 }}>Тёмная тема</Text>
+          <View style={{ backgroundColor: theme.surface, borderRadius: 16, padding: 20 }}>
+            <TouchableOpacity 
+              style={{ 
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+              }} 
+              onPress={toggleTheme}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialIcons 
+                  name={isDarkMode ? "dark-mode" : "light-mode"} 
+                  size={24} 
+                  color={brandColor} 
+                  style={{ marginRight: 12 }}
+                />
+                <Text style={{ fontSize: 16, color: theme.text }}>
+                  {isDarkMode ? "Тёмная тема включена" : "Светлая тема включена"}
+                </Text>
+              </View>
+              <MaterialIcons 
+                name={isDarkMode ? "toggle-on" : "toggle-off"} 
+                size={32} 
+                color={brandColor} 
+              />
+            </TouchableOpacity>
+            <Text style={{ color: theme.textHint, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+              Переключить тему оформления приложения
+            </Text>
+          </View>
+        </View>
+
+        {/* Резервное копирование */}
+        <View style={{ marginBottom: 32 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: theme.text, marginBottom: 16 }}>Резервное копирование</Text>
+          <View style={{ backgroundColor: theme.surface, borderRadius: 16, padding: 20, gap: 12 }}>
             <TouchableOpacity 
               style={{ 
                 backgroundColor: brandColor, 
@@ -389,7 +431,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
             
             <TouchableOpacity 
               style={{ 
-                backgroundColor: '#FF6B6B', 
+                backgroundColor: theme.error, 
                 padding: 16, 
                 borderRadius: 12, 
                 flexDirection: 'row', 
@@ -413,12 +455,13 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
           </View>
         </View>
 
+        {/* Диагностика виджета */}
         <View style={{ marginBottom: 32 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>Диагностика виджета</Text>
-          <View style={{ backgroundColor: '#F8F9FA', borderRadius: 16, padding: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: theme.text, marginBottom: 16 }}>Диагностика виджета</Text>
+          <View style={{ backgroundColor: theme.surface, borderRadius: 16, padding: 20 }}>
             <TouchableOpacity 
               style={{ 
-                backgroundColor: '#4CAF50', 
+                backgroundColor: theme.success, 
                 padding: 16, 
                 borderRadius: 12, 
                 flexDirection: 'row', 
@@ -430,7 +473,7 @@ const SettingsScreen = ({ setCurrentScreen, goToSearch, settings, saveSettings, 
               <MaterialIcons name="bug-report" size={24} color="white" style={{ marginRight: 8 }} />
               <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Проверить виджет</Text>
             </TouchableOpacity>
-            <Text style={{ color: '#666', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+            <Text style={{ color: theme.textHint, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
               Результат появится в диалоговом окне
             </Text>
           </View>
