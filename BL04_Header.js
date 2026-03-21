@@ -4,11 +4,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BRAND_COLOR } from './BL02_Constants';
 
-const Header = ({ title, rightIcon, onRightPress, showBack, onBack, showSearch, onSearchPress, showPalette, onPalettePress, children, brandColor }) => {
+const Header = ({ title, rightIcon, onRightPress, showBack, onBack, showSearch, onSearchPress, showPalette, onPalettePress, children, brandColor, theme }) => {
   const insets = useSafeAreaInsets();
   const headerColor = brandColor || BRAND_COLOR;
   
-  // Преобразуем children в массив, если это не массив
   const childrenArray = React.Children.toArray(children);
   
   return (
@@ -23,23 +22,23 @@ const Header = ({ title, rightIcon, onRightPress, showBack, onBack, showSearch, 
       alignItems: 'center' 
     }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-        {showBack && <TouchableOpacity onPress={onBack} style={{ marginRight: 16 }}>
-          <MaterialIcons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>}
+        {showBack && (
+          <TouchableOpacity onPress={onBack} style={{ marginRight: 16 }}>
+            <MaterialIcons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+        )}
         <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 20, flex: 1 }} numberOfLines={1} ellipsizeMode="tail">
           {title}
         </Text>
       </View>
       
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        {/* Дополнительные кнопки из children с отступом 20px между ними */}
         {childrenArray.map((child, index) => (
           <View key={index} style={{ marginRight: index < childrenArray.length - 1 ? 20 : 0 }}>
             {child}
           </View>
         ))}
         
-        {/* Стандартные кнопки с отступом 20px от предыдущих */}
         {childrenArray.length > 0 && (showPalette || showSearch || rightIcon) && (
           <View style={{ width: 20 }} />
         )}
