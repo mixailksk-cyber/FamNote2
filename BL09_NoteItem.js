@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { NOTE_COLORS, formatDate, getBrandColor } from './BL02_Constants';
 
-const NoteItem = ({ item, onPress, onLongPress, settings, showPin }) => {
+const NoteItem = ({ item, onPress, onLongPress, settings, showPin, theme }) => {
   const defaultColor = getBrandColor(settings);
   const { day, month } = formatDate(item.updatedAt || item.createdAt || Date.now());
   
@@ -11,7 +11,14 @@ const NoteItem = ({ item, onPress, onLongPress, settings, showPin }) => {
     <TouchableOpacity 
       onLongPress={onLongPress} 
       onPress={onPress} 
-      style={{ padding: 12, borderBottomWidth: 1, borderColor: '#E0E0E0', flexDirection: 'row', alignItems: 'center' }}>
+      style={{ 
+        padding: 12, 
+        borderBottomWidth: 1, 
+        borderColor: theme.divider, 
+        flexDirection: 'row', 
+        alignItems: 'center',
+        backgroundColor: theme.background
+      }}>
       
       <View style={{ 
         width: 52, 
@@ -29,13 +36,13 @@ const NoteItem = ({ item, onPress, onLongPress, settings, showPin }) => {
       <View style={{ flex: 1 }}>
         {item.title ? (
           <>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#333' }} numberOfLines={1}>{item.title}</Text>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, color: theme.text }} numberOfLines={1}>{item.title}</Text>
             {item.content ? (
-              <Text style={{ color: '#666', fontSize: 16 }} numberOfLines={1}>{item.content}</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 16 }} numberOfLines={1}>{item.content}</Text>
             ) : null}
           </>
         ) : (
-          <Text style={{ color: '#666', fontSize: 16 }} numberOfLines={2}>{item.content || '...'}</Text>
+          <Text style={{ color: theme.textSecondary, fontSize: 16 }} numberOfLines={2}>{item.content || '...'}</Text>
         )}
       </View>
       
