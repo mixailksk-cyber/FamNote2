@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StatusBar, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BRAND_COLOR, getBrandColor } from './BL02_Constants';
+import { useTheme } from './BL21_ThemeContext';
 import { useNotesData } from './BL12_DataHooks';
 import { useMemoizedCalculations } from './BL13_MemoizedCalculations';
 import { useFolderHandlers } from './BL14_FolderHandlers';
@@ -18,6 +19,7 @@ import NoteActionDialog from './BL07_NoteActionDialog';
 
 const AppContent = () => {
   const insets = useSafeAreaInsets();
+  const { theme, isDarkMode } = useTheme();
   const [currentScreen, setCurrentScreen] = useState('notes');
   const [navigationStack, setNavigationStack] = useState(['notes']);
   const [currentFolder, setCurrentFolder] = useState('Главная');
@@ -43,7 +45,6 @@ const AppContent = () => {
   // Обработчик аппаратной кнопки "Назад" на Android
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Если открыт диалог - закрываем его
       if (showNoteDialog) {
         setShowNoteDialog(false);
         setSelectedNoteForAction(null);
@@ -59,19 +60,14 @@ const AppContent = () => {
         return true;
       }
 
-      // Если не в корневом экране - возвращаемся назад
       if (currentScreen !== 'notes' || navigationStack.length > 1) {
         if (currentScreen === 'edit' && selectedNote) {
-          // Проверяем, пришли ли мы с поиска
           const cameFromSearch = navigationStack[navigationStack.length - 1] === 'search';
           if (cameFromSearch) {
-            // Возвращаемся на поиск
             setCurrentScreen('search');
             setSelectedNote(null);
             setNavigationStack(prev => prev.slice(0, -1));
-            // searchQuery не очищаем
           } else {
-            // Возвращаемся в папку с заметкой
             setCurrentScreen('notes');
             setCurrentFolder(selectedNote.folder);
             setSelectedNote(null);
@@ -118,11 +114,9 @@ const AppContent = () => {
     saveNotes(updatedNotes);
   };
 
-  // Очистка корзины
   const handleEmptyTrash = () => {
     const updatedNotes = notes.filter(n => n.folder !== 'Корзина' && !n.deleted);
     saveNotes(updatedNotes);
-    // Обновляем ключ для принудительного обновления списка
     setRestoreKey(prev => prev + 1);
   };
   
@@ -144,7 +138,6 @@ const AppContent = () => {
     
     saveNotes(newNotes);
     
-    // Если это разблокировка (skipNavigation = true) - не выполняем навигацию
     if (skipNavigation) {
       console.log('Skipping navigation after unlock');
       return;
@@ -176,22 +169,32 @@ const AppContent = () => {
   
   const handleBrandColorChange = (color) => saveSettings({ ...settings, brandColor: color });
   
+  const currentBrandColor = getBrandColor(settings);
+  
   const renderScreen = () => {
+    const screenProps = {
+      theme,
+      isDarkMode,
+      settings,
+      notes,
+      folders,
+      currentFolder,
+      sortedNotes,
+      handleNotePress: (note) => handleNotePress(note, 'notes'),
+      setSelectedNoteForAction,
+      setShowNoteDialog,
+      setCurrentScreen,
+      setSelectedNote,
+      goToSearch,
+      insets,
+      onEmptyTrash: handleEmptyTrash,
+    };
+    
     switch (currentScreen) {
       case 'notes':
         return <NotesListScreen 
           key={`notes-${restoreKey}`}
-          currentFolder={currentFolder} 
-          sortedNotes={sortedNotes} 
-          handleNotePress={(note) => handleNotePress(note, 'notes')} 
-          setSelectedNoteForAction={setSelectedNoteForAction} 
-          setShowNoteDialog={setShowNoteDialog} 
-          setCurrentScreen={setCurrentScreen} 
-          setSelectedNote={setSelectedNote} 
-          goToSearch={goToSearch} 
-          insets={insets} 
-          settings={settings}
-          onEmptyTrash={handleEmptyTrash}
+          {...screenProps}
         />;
       
       case 'edit':
@@ -200,6 +203,8 @@ const AppContent = () => {
           currentFolder={currentFolder} 
           notes={notes} 
           settings={settings} 
+          theme={theme}
+          isDarkMode={isDarkMode}
           navigationStack={navigationStack} 
           onSave={handleSaveNote} 
           setCurrentScreen={setCurrentScreen} 
@@ -218,6 +223,8 @@ const AppContent = () => {
           setCurrentScreen={setCurrentScreen} 
           goToSearch={goToSearch} 
           insets={insets} 
+          theme={theme}
+          isDarkMode={isDarkMode}
           showFolderDialog={showFolderDialog} 
           setShowFolderDialog={setShowFolderDialog} 
           saveFolders={saveFolders} 
@@ -242,6 +249,8 @@ const AppContent = () => {
           saveSettings={saveSettings} 
           notes={notes} 
           folders={folders} 
+          theme={theme}
+          isDarkMode={isDarkMode}
           onBrandColorChange={handleBrandColorChange}
           onDataRestored={handleDataRestored}
         />;
@@ -254,6 +263,8 @@ const AppContent = () => {
           setSelectedNoteForAction={setSelectedNoteForAction} 
           setShowNoteDialog={setShowNoteDialog} 
           goBack={goBack} 
+          theme={theme}
+          isDarkMode={isDarkMode}
           navigationStack={navigationStack} 
           setNavigationStack={setNavigationStack} 
           setSearchQuery={setSearchQuery} 
@@ -264,27 +275,20 @@ const AppContent = () => {
       default:
         return <NotesListScreen 
           key={`notes-${restoreKey}`}
-          currentFolder={currentFolder} 
-          sortedNotes={sortedNotes} 
-          handleNotePress={(note) => handleNotePress(note, 'notes')} 
-          setSelectedNoteForAction={setSelectedNoteForAction} 
-          setShowNoteDialog={setShowNoteDialog} 
-          setCurrentScreen={setCurrentScreen} 
-          setSelectedNote={setSelectedNote} 
-          goToSearch={goToSearch} 
-          insets={insets} 
-          settings={settings}
-          onEmptyTrash={handleEmptyTrash}
+          {...screenProps}
         />;
     }
   };
   
-  const currentBrandColor = getBrandColor(settings);
-  
   return (
     <>
-      <StatusBar backgroundColor={currentBrandColor} barStyle="light-content" />
-      <View style={{ flex: 1 }}>{renderScreen()}</View>
+      <StatusBar 
+        backgroundColor={currentBrandColor} 
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
+      />
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
+        {renderScreen()}
+      </View>
       
       {selectedNoteForAction && (
         <NoteActionDialog 
@@ -320,7 +324,9 @@ const AppContent = () => {
           onToggleLock={() => handleToggleLock(selectedNoteForAction.id)}
           isPinned={selectedNoteForAction?.pinned || false}
           isLocked={selectedNoteForAction?.locked || false}
-          settings={settings} 
+          settings={settings}
+          theme={theme}
+          isDarkMode={isDarkMode}
         />
       )}
     </>
